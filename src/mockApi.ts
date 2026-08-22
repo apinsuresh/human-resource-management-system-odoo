@@ -303,7 +303,7 @@ const SEED_EMPLOYEES: Employee[] = [
     role: 'EMPLOYEE',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
-    mustResetPassword: true, // Forces reset on first login
+    mustResetPassword: false,
     passwordHash: 'EmpPassword123'
   },
   {
@@ -506,11 +506,23 @@ export const initializeMockDB = () => {
   if (!localStorage.getItem(KEYS.EMPLOYEES)) {
     const hashed = SEED_EMPLOYEES.map(emp => ({
       ...emp,
-      status: emp.id === 'emp-employee-uuid' ? 'PASSWORD_CHANGE_REQUIRED' : 'ACTIVE',
+      status: 'ACTIVE',
       failedAttempts: 0,
       passwordHash: hashPassword(emp.passwordHash)
     }));
     localStorage.setItem(KEYS.EMPLOYEES, JSON.stringify(hashed));
+  } else {
+    // Migration: clear any lingering mustResetPassword / PASSWORD_CHANGE_REQUIRED from old seeds
+    const stored = JSON.parse(localStorage.getItem(KEYS.EMPLOYEES) || '[]');
+    let changed = false;
+    const patched = stored.map((emp: any) => {
+      if (emp.mustResetPassword || emp.status === 'PASSWORD_CHANGE_REQUIRED') {
+        changed = true;
+        return { ...emp, mustResetPassword: false, status: 'ACTIVE' };
+      }
+      return emp;
+    });
+    if (changed) localStorage.setItem(KEYS.EMPLOYEES, JSON.stringify(patched));
   }
   if (!localStorage.getItem(KEYS.SALARIES)) {
     localStorage.setItem(KEYS.SALARIES, JSON.stringify(SEED_SALARIES));
