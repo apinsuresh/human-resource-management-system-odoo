@@ -199,21 +199,24 @@ export default function Directory({ userRole, onNavigateToSalaryInfo }: Director
 
     if (status === 'PRESENT') {
       return (
-        <span className="badge" style={{ color: 'var(--status-present)', background: 'rgba(16,185,129,0.08)', padding: '0.25rem 0.5rem', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 'bold' }}>
-          ● Present
+        <span className="badge" style={{ color: '#16a34a', background: '#f0fdf4', border: '1px solid #dcfce7', padding: '0.2rem 0.65rem', borderRadius: '12px', fontSize: '0.72rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+          <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#16a34a' }} />
+          Present
         </span>
       );
     }
     if (status === 'ON_LEAVE') {
       return (
-        <span className="badge" style={{ color: 'var(--accent-primary)', background: 'rgba(37,99,235,0.08)', padding: '0.25rem 0.5rem', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 'bold' }}>
-           On Leave
+        <span className="badge" style={{ color: '#2563eb', background: '#eff6ff', border: '1px solid #dbeafe', padding: '0.2rem 0.65rem', borderRadius: '12px', fontSize: '0.72rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+          <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#2563eb' }} />
+          On Leave
         </span>
       );
     }
     return (
-      <span className="badge" style={{ color: '#d97706', background: 'rgba(217,119,6,0.08)', padding: '0.25rem 0.5rem', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 'bold' }}>
-        ● Absent
+      <span className="badge" style={{ color: '#ea580c', background: '#fff7ed', border: '1px solid #ffedd5', padding: '0.2rem 0.65rem', borderRadius: '12px', fontSize: '0.72rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+        <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#ea580c' }} />
+        Absent
       </span>
     );
   };
@@ -378,9 +381,9 @@ export default function Directory({ userRole, onNavigateToSalaryInfo }: Director
             key={emp.id} 
             className="employee-card glass-card"
             style={{
-              padding: '1.5rem',
+              padding: '1.25rem',
               borderRadius: '16px',
-              border: '1px solid var(--border-glass)',
+              border: '1px solid var(--border-color)',
               cursor: 'pointer',
               transition: 'all var(--transition-speed) ease',
               display: 'flex',
@@ -388,7 +391,7 @@ export default function Directory({ userRole, onNavigateToSalaryInfo }: Director
               alignItems: 'flex-start',
               position: 'relative',
               textAlign: 'left',
-              background: '#ffffff'
+              background: 'var(--bg-card)'
             }}
             onClick={() => handleCardClick(emp.id)}
             onKeyDown={(e) => handleKeyDown(e, emp.id)}
@@ -396,30 +399,132 @@ export default function Directory({ userRole, onNavigateToSalaryInfo }: Director
             tabIndex={0}
             aria-label={`${emp.firstName} ${emp.lastName}, ${emp.jobPosition} in ${emp.department}. Click to view details.`}
           >
-            {/* Top row with avatar and top-right status dot */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center', marginBottom: '1rem' }}>
-              <div className="list-avatar-circle" style={{ width: '48px', height: '48px', margin: 0, fontSize: '1.05rem', fontWeight: 'bold' }}>
+            {/* Top row with Purple Circle Avatar, Status Badge, and Top-Right 3-dot Menu */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center', marginBottom: '0.85rem' }}>
+              <div 
+                style={{ 
+                  width: '48px', 
+                  height: '48px', 
+                  borderRadius: '50%', 
+                  background: 'linear-gradient(135deg, #6366f1, #4f46e5)', 
+                  color: '#ffffff', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justify: 'center', 
+                  fontSize: '1rem', 
+                  fontWeight: 800,
+                  flexShrink: 0
+                }}
+              >
                 {emp.firstName.substring(0, 2).toUpperCase()}
               </div>
-              <div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                 {getStatusBadge(emp.id)}
+                <button 
+                  type="button"
+                  title="Options"
+                  style={{ border: 'none', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '1.1rem', padding: '0.1rem 0.25rem', lineHeight: 1 }}
+                  onClick={(e) => { e.stopPropagation(); showToast(`Actions for ${emp.firstName}`, 'info'); }}
+                >
+                  ⋮
+                </button>
               </div>
             </div>
 
-            {/* Info Stack */}
-            <h4 style={{ margin: '0 0 0.25rem 0', fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+            {/* Name & Job Position */}
+            <h4 style={{ margin: '0 0 0.15rem 0', fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-primary)' }}>
               {emp.firstName} {emp.lastName}
             </h4>
-            <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', display: 'block', fontWeight: 600 }}>
+            <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', fontWeight: 500, display: 'block', marginBottom: '0.4rem' }}>
               {emp.jobPosition}
             </span>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginTop: '0.15rem' }}>
-              {emp.department}
-            </span>
+
+            {/* Department with building icon */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '0.65rem' }}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/>
+                <path d="M6 12H4a2 2 0 0 0-2 2v8"/>
+                <path d="M18 9h2a2 2 0 0 1 2 2v11"/>
+              </svg>
+              <span>{emp.department}</span>
+            </div>
             
-            <code style={{ fontSize: '0.75rem', marginTop: '1rem', display: 'inline-block', opacity: 0.85, background: 'rgba(0,0,0,0.03)', padding: '0.15rem 0.35rem', borderRadius: '4px' }}>
+            {/* Corporate ID Badge Pill */}
+            <div 
+              style={{ 
+                background: 'var(--bg-secondary)', 
+                padding: '0.2rem 0.65rem', 
+                borderRadius: '12px', 
+                fontSize: '0.73rem', 
+                fontWeight: 600, 
+                color: 'var(--text-secondary)', 
+                letterSpacing: '0.02em', 
+                display: 'inline-block', 
+                marginBottom: '1rem',
+                border: '1px solid var(--border-color)'
+              }}
+            >
               {emp.loginId}
-            </code>
+            </div>
+
+            {/* Bottom Action Bar (Email, Phone, Calendar + 3-Dot) */}
+            <div 
+              style={{ 
+                display: 'flex', 
+                justify: 'space-between', 
+                alignItems: 'center', 
+                width: '100%', 
+                paddingTop: '0.65rem', 
+                borderTop: '1px solid var(--border-color)',
+                marginTop: 'auto'
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button 
+                  type="button"
+                  title={`Email ${emp.email}`}
+                  style={{ width: '32px', height: '32px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-secondary)', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                  onClick={() => showToast(`Opening email to ${emp.email}`, 'info')}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+                  </svg>
+                </button>
+
+                <button 
+                  type="button"
+                  title={`Call ${emp.mobile}`}
+                  style={{ width: '32px', height: '32px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-secondary)', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                  onClick={() => showToast(`Calling ${emp.mobile}`, 'info')}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+                  </svg>
+                </button>
+
+                <button 
+                  type="button"
+                  title="Schedule Meeting"
+                  style={{ width: '32px', height: '32px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-secondary)', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                  onClick={() => showToast(`Schedule meeting with ${emp.firstName}`, 'info')}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/>
+                  </svg>
+                </button>
+              </div>
+
+              <button 
+                type="button"
+                title="More Actions"
+                style={{ border: 'none', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '1rem', padding: '0.2rem 0.4rem' }}
+                onClick={() => showToast(`More options for ${emp.firstName}`, 'info')}
+              >
+                ⋮
+              </button>
+            </div>
           </div>
         ))}
       </div>
