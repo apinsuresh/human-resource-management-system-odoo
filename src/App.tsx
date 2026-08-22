@@ -17,6 +17,7 @@ import AttendanceView from './views/AttendanceView';
 import TimeOffView from './views/TimeOffView';
 import PayrollView from './views/PayrollView';
 import ReportsView from './views/ReportsView';
+import SettingsView from './views/SettingsView';
 
 export default function App() {
   const [session, setSession] = useState<any>(null);
@@ -93,13 +94,7 @@ export default function App() {
       case 'reports':
         return <ReportsView />;
       case 'settings':
-        return (
-          <div className="card glass-card" style={{ padding: '3rem', textAlign: 'center' }}>
-            <span style={{ fontSize: '3rem', display: 'block', marginBottom: '1rem' }}>⚙️</span>
-            <h3>Settings & Configurations</h3>
-            <p style={{ color: 'var(--text-secondary)', marginTop: '0.5rem' }}>Coming soon! Configure system parameters, notifications rules, and profile visibility settings.</p>
-          </div>
-        );
+        return <SettingsView />;
       default:
         return <div>View not found.</div>;
     }
