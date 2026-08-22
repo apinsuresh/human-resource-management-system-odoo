@@ -25,7 +25,7 @@ function DonutChart({ segments, total }: { segments: { value: number; color: str
   let offset = 0;
   return (
     <svg width="140" height="140" viewBox="0 0 140 140" aria-hidden="true">
-      <circle cx={cx} cy={cy} r={r} fill="none" stroke="#f1f5f9" strokeWidth={strokeW} />
+      <circle cx={cx} cy={cy} r={r} fill="none" stroke="var(--border-color)" strokeWidth={strokeW} />
       {segments.map((seg, i) => {
         const dash = (seg.value / total) * circ;
         const gap = circ - dash;
@@ -39,8 +39,8 @@ function DonutChart({ segments, total }: { segments: { value: number; color: str
         offset += dash;
         return el;
       })}
-      <text x={cx} y={cy - 6} textAnchor="middle" fontSize="20" fontWeight="700" fill="#1e293b">{total}</text>
-      <text x={cx} y={cy + 14} textAnchor="middle" fontSize="11" fill="#64748b">Total</text>
+      <text x={cx} y={cy - 6} textAnchor="middle" fontSize="20" fontWeight="700" fill="var(--text-primary)">{total}</text>
+      <text x={cx} y={cy + 14} textAnchor="middle" fontSize="11" fill="var(--text-secondary)">Total</text>
     </svg>
   );
 }
@@ -52,12 +52,12 @@ function AttendanceRadial({ pct }: { pct: number }) {
   const dash = (pct / 100) * circ;
   return (
     <svg width="140" height="140" viewBox="0 0 140 140" aria-hidden="true">
-      <circle cx={cx} cy={cy} r={r} fill="none" stroke="#e2e8f0" strokeWidth={strokeW} />
+      <circle cx={cx} cy={cy} r={r} fill="none" stroke="var(--border-color)" strokeWidth={strokeW} />
       <circle cx={cx} cy={cy} r={r} fill="none" stroke="#6366f1" strokeWidth={strokeW}
         strokeDasharray={`${dash} ${circ - dash}`} strokeLinecap="round"
         style={{ transform: 'rotate(-90deg)', transformOrigin: `${cx}px ${cy}px` }} />
-      <text x={cx} y={cy - 4} textAnchor="middle" fontSize="20" fontWeight="700" fill="#1e293b">{pct}%</text>
-      <text x={cx} y={cy + 14} textAnchor="middle" fontSize="10" fill="#64748b">Attendance Rate</text>
+      <text x={cx} y={cy - 4} textAnchor="middle" fontSize="20" fontWeight="700" fill="var(--text-primary)">{pct}%</text>
+      <text x={cx} y={cy + 14} textAnchor="middle" fontSize="10" fill="var(--text-secondary)">Attendance Rate</text>
     </svg>
   );
 }
@@ -79,8 +79,8 @@ function StackedBarChart() {
     <svg width="100%" height={h + 30} viewBox={`0 0 ${w} ${h + 30}`} aria-hidden="true">
       {[0,25,50,75,100].map(g => (
         <g key={g}>
-          <line x1="30" y1={h - (g / maxVal) * h} x2={w} y2={h - (g / maxVal) * h} stroke="#f1f5f9" strokeWidth="1" />
-          <text x="24" y={h - (g / maxVal) * h + 4} textAnchor="end" fontSize="9" fill="#94a3b8">{g}</text>
+          <line x1="30" y1={h - (g / maxVal) * h} x2={w} y2={h - (g / maxVal) * h} stroke="var(--border-color)" strokeWidth="1" />
+          <text x="24" y={h - (g / maxVal) * h + 4} textAnchor="end" fontSize="9" fill="var(--text-muted)">{g}</text>
         </g>
       ))}
       {data.map((d, i) => {
@@ -99,7 +99,7 @@ function StackedBarChart() {
               stackY -= sh;
               return <rect key={j} x={x} y={stackY} width={barW} height={sh} fill={s.color} rx="2" />;
             })}
-            <text x={x + barW / 2} y={h + 16} textAnchor="middle" fontSize="9" fill="#64748b">{days[i]}</text>
+            <text x={x + barW / 2} y={h + 16} textAnchor="middle" fontSize="9" fill="var(--text-secondary)">{days[i]}</text>
           </g>
         );
       })}
@@ -123,15 +123,15 @@ function PayrollLineChart() {
     <svg width="100%" height={h + 30} viewBox={`0 0 ${w} ${h + 30}`} aria-hidden="true">
       {[0,50000,100000,150000,200000,250000].map(g => (
         <g key={g}>
-          <line x1="30" y1={h - (g / maxV) * h} x2={w} y2={h - (g / maxV) * h} stroke="#f1f5f9" strokeWidth="1" />
-          <text x="28" y={h - (g / maxV) * h + 4} textAnchor="end" fontSize="8" fill="#94a3b8">{g >= 1000 ? `${g/1000}K` : g}</text>
+          <line x1="30" y1={h - (g / maxV) * h} x2={w} y2={h - (g / maxV) * h} stroke="var(--border-color)" strokeWidth="1" />
+          <text x="28" y={h - (g / maxV) * h + 4} textAnchor="end" fontSize="8" fill="var(--text-muted)">{g >= 1000 ? `${g/1000}K` : g}</text>
         </g>
       ))}
       <polyline fill="none" stroke="#8b5cf6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" points={pts(total)} />
       <polyline fill="none" stroke="#3b82f6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" points={pts(net)} />
       {labels.map((l, i) => {
         const x = 30 + (i / (labels.length - 1)) * (w - 40);
-        return <text key={i} x={x} y={h + 16} textAnchor="middle" fontSize="9" fill="#64748b">{l}</text>;
+        return <text key={i} x={x} y={h + 16} textAnchor="middle" fontSize="9" fill="var(--text-secondary)">{l}</text>;
       })}
     </svg>
   );
@@ -143,7 +143,7 @@ function DeptBar({ label, value, max, color }: { label: string; value: number; m
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.6rem' }}>
       <span style={{ width: '80px', fontSize: '0.78rem', color: 'var(--text-secondary)', textAlign: 'right', flexShrink: 0 }}>{label}</span>
-      <div style={{ flex: 1, background: '#f1f5f9', borderRadius: '4px', height: '10px', overflow: 'hidden' }}>
+      <div style={{ flex: 1, background: 'var(--bg-secondary)', borderRadius: '4px', height: '10px', overflow: 'hidden' }}>
         <div style={{ width: `${pct}%`, background: color, height: '100%', borderRadius: '4px', transition: 'width 0.6s ease' }} />
       </div>
       <span style={{ width: '24px', fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-primary)', flexShrink: 0 }}>{value}</span>
@@ -189,10 +189,10 @@ export default function ReportsView() {
   ];
 
   const insights = [
-    { icon: '📈', text: 'Attendance improved by 12% compared to April 2025.', bg: '#f0fdf4', border: '#bbf7d0' },
-    { icon: '💡', text: 'Payroll processing time reduced by 8% this month.',   bg: '#fdf4ff', border: '#e9d5ff' },
-    { icon: '🔔', text: 'Leave requests increased by 15% compared to last month.', bg: '#fff7ed', border: '#fed7aa' },
-    { icon: '📅', text: '3 reports are scheduled to run tomorrow.',             bg: '#eff6ff', border: '#bfdbfe' },
+    { icon: '📈', text: 'Attendance improved by 12% compared to April 2025.' },
+    { icon: '💡', text: 'Payroll processing time reduced by 8% this month.' },
+    { icon: '🔔', text: 'Leave requests increased by 15% compared to last month.' },
+    { icon: '📅', text: '3 reports are scheduled to run tomorrow.' },
   ];
 
   return (
@@ -292,7 +292,7 @@ export default function ReportsView() {
         {/* Employee Activity */}
         <div className="card glass-card" style={{ padding: '1.25rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-            <h3 style={{ fontSize: '0.95rem', fontWeight: 700, margin: 0 }}>Employee Activity Overview</h3>
+            <h3 style={{ fontSize: '0.95rem', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>Employee Activity Overview</h3>
             <select style={{ fontSize: '0.78rem', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '0.25rem 0.5rem', background: 'var(--bg-secondary)', color: 'var(--text-primary)', cursor: 'pointer' }} aria-label="Activity period">
               <option>Daily</option><option>Weekly</option><option>Monthly</option>
             </select>
@@ -310,7 +310,7 @@ export default function ReportsView() {
         {/* Payroll Summary */}
         <div className="card glass-card" style={{ padding: '1.25rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-            <h3 style={{ fontSize: '0.95rem', fontWeight: 700, margin: 0 }}>Payroll Summary</h3>
+            <h3 style={{ fontSize: '0.95rem', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>Payroll Summary</h3>
             <select style={{ fontSize: '0.78rem', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '0.25rem 0.5rem', background: 'var(--bg-secondary)', color: 'var(--text-primary)', cursor: 'pointer' }} aria-label="Payroll period">
               <option>Monthly</option><option>Quarterly</option><option>Yearly</option>
             </select>
@@ -334,7 +334,7 @@ export default function ReportsView() {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
         {/* Reports by Type */}
         <div className="card glass-card" style={{ padding: '1.25rem' }}>
-          <h3 style={{ fontSize: '0.95rem', fontWeight: 700, margin: '0 0 1rem' }}>Reports by Type</h3>
+          <h3 style={{ fontSize: '0.95rem', fontWeight: 700, margin: '0 0 1rem', color: 'var(--text-primary)' }}>Reports by Type</h3>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
             <DonutChart segments={reportTypes.map(r => ({ value: r.value, color: r.color }))} total={24} />
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', flex: 1 }}>
@@ -357,7 +357,7 @@ export default function ReportsView() {
         {/* Department Overview */}
         <div className="card glass-card" style={{ padding: '1.25rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <h3 style={{ fontSize: '0.95rem', fontWeight: 700, margin: 0 }}>Department Overview</h3>
+            <h3 style={{ fontSize: '0.95rem', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>Department Overview</h3>
             <select style={{ fontSize: '0.75rem', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '0.25rem 0.5rem', background: 'var(--bg-secondary)', color: 'var(--text-primary)', cursor: 'pointer' }} aria-label="Overview metric">
               <option>By Employees</option><option>By Salary</option><option>By Attendance</option>
             </select>
@@ -372,7 +372,7 @@ export default function ReportsView() {
 
         {/* Attendance Summary */}
         <div className="card glass-card" style={{ padding: '1.25rem' }}>
-          <h3 style={{ fontSize: '0.95rem', fontWeight: 700, margin: '0 0 0.75rem' }}>Attendance Summary</h3>
+          <h3 style={{ fontSize: '0.95rem', fontWeight: 700, margin: '0 0 0.75rem', color: 'var(--text-primary)' }}>Attendance Summary</h3>
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '0.75rem' }}>
             <AttendanceRadial pct={87} />
           </div>
@@ -402,7 +402,7 @@ export default function ReportsView() {
       {/* ── Insights & Recommendations ── */}
       <div className="card glass-card" style={{ padding: '1.25rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-          <h3 style={{ fontSize: '0.95rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+          <h3 style={{ fontSize: '0.95rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--text-primary)' }}>
             <span style={{ fontSize: '1rem' }}>✨</span> Insights &amp; Recommendations
           </h3>
           <button className="btn btn-primary" onClick={() => showToast('Viewing all insights.', 'info')} style={{ fontSize: '0.78rem', padding: '0.4rem 0.9rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
@@ -412,9 +412,9 @@ export default function ReportsView() {
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '0.75rem' }}>
           {insights.map((ins, i) => (
-            <div key={i} style={{ background: ins.bg, border: `1px solid ${ins.border}`, borderRadius: '10px', padding: '0.85rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+            <div key={i} style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '10px', padding: '0.85rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
               <span style={{ fontSize: '1.2rem' }}>{ins.icon}</span>
-              <p style={{ fontSize: '0.78rem', color: '#374151', margin: 0, lineHeight: 1.5 }}>{ins.text}</p>
+              <p style={{ fontSize: '0.78rem', color: 'var(--text-primary)', margin: 0, lineHeight: 1.5 }}>{ins.text}</p>
             </div>
           ))}
         </div>

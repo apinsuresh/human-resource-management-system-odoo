@@ -32,6 +32,10 @@
   --text-secondary: #64748B; /* Slate Gray */
   --text-muted: #94A3B8;
 
+  --bg-secondary: #F1F5F9;
+  --border-color: rgba(148, 163, 184, 0.2);
+  --bg-hover: #E2E8F0;
+
   --sidebar-width: 260px;
   --header-height: 70px;
   --border-radius: 16px;
@@ -40,17 +44,26 @@
 
 /* Dark mode theme overrides */
 [data-theme='dark'] {
+  color-scheme: dark;
   --bg-app: #0F172A;
   --bg-gradient-top: radial-gradient(at 0% 0%, rgba(30, 41, 59, 0.4) 0, transparent 50%), #0F172A;
   
-  --bg-card: rgba(15, 23, 42, 0.75);
-  --border-glass: rgba(255, 255, 255, 0.08);
+  --bg-card: rgba(30, 41, 59, 0.75);
+  --bg-secondary: #1E293B;
+  --border-color: rgba(255, 255, 255, 0.12);
+  --bg-hover: #334155;
+  --border-glass: rgba(255, 255, 255, 0.12);
   --shadow-glass: 0 10px 35px rgba(0, 0, 0, 0.3);
   --shadow-premium: 0 15px 45px rgba(0, 0, 0, 0.4);
 
   --text-primary: #F8FAFC;
   --text-secondary: #94A3B8;
   --text-muted: #64748B;
+}
+
+[data-theme='dark'] select option {
+  background-color: #1E293B;
+  color: #F8FAFC;
 }
 
 /* ==========================================================================
@@ -1800,14 +1813,14 @@ button, input, select, textarea {
 }
 
 .btn-secondary {
-  background-color: #ffffff;
+  background-color: var(--bg-secondary);
   color: var(--text-primary);
-  border-color: var(--border-glass);
+  border: 1px solid var(--border-color);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
 }
 
 .btn-secondary:hover {
-  background-color: #f8fafc;
+  background-color: var(--bg-hover);
   color: var(--text-primary);
   transform: translateY(-1px);
 }
