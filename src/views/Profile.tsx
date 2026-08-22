@@ -35,12 +35,18 @@ export default function Profile({ userId, userRole }: ProfileProps) {
   const [dob, setDob] = useState('');
   const [doj, setDoj] = useState(new Date().toISOString().split('T')[0]);
   const [gender, setGender] = useState<'MALE' | 'FEMALE' | 'OTHER'>('MALE');
+  const [employmentType, setEmploymentType] = useState('Full-Time');
   
   // Onboarding Results Modal
-  const [onboardResult, setOnboardResult] = useState<{ loginId: string; tempPass: string } | null>(null);
+  const [onboardResult, setOnboardResult] = useState<{ name: string; loginId: string; tempPass: string } | null>(null);
 
   const [loading, setLoading] = useState(false);
   const [managers, setManagers] = useState<Employee[]>([]);
+
+  // Unsaved changes guard
+  const [isDirty, setIsDirty] = useState(false);
+  const [showDiscardDialog, setShowDiscardDialog] = useState(false);
+  const [pendingTab, setPendingTab] = useState<'profile' | 'onboard' | null>(null);
 
   const fetchProfile = () => {
     try {
@@ -69,6 +75,25 @@ export default function Profile({ userId, userRole }: ProfileProps) {
     setManagers(employees.filter(e => e.role === 'ADMIN' || e.role === 'HR_OFFICER'));
   }, [userId, userRole]);
 
+  // Tab switch guard: intercept tab clicks when dirty
+  const handleTabClick = (tab: 'profile' | 'onboard') => {
+    if (isDirty && tab !== activeTab) {
+      setPendingTab(tab);
+      setShowDiscardDialog(true);
+    } else {
+      setActiveTab(tab);
+    }
+  };
+
+  const confirmDiscard = () => {
+    setIsDirty(false);
+    setShowDiscardDialog(false);
+    if (pendingTab) {
+      setActiveTab(pendingTab);
+      setPendingTab(null);
+    }
+  };
+
   const handleProfileSave = (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -85,6 +110,7 @@ export default function Profile({ userId, userRole }: ProfileProps) {
         uanNo,
         skills
       });
+      setIsDirty(false);
       showToast('Profile updated successfully!', 'success');
       fetchProfile();
     } catch (err: any) {
@@ -113,10 +139,12 @@ export default function Profile({ userId, userRole }: ProfileProps) {
         location,
         dateOfBirth: dob,
         dateOfJoining: doj,
-        gender
+        gender,
+        employmentType
       } as any);
 
       setOnboardResult({
+        name: `${firstName} ${lastName}`,
         loginId: result.loginId,
         tempPass: result.tempPassword
       });
@@ -173,13 +201,27 @@ export default function Profile({ userId, userRole }: ProfileProps) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+      {/* Unsaved Changes Confirmation Dialog */}
+      {showDiscardDialog && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div className="card glass-card" style={{ padding: '2rem', maxWidth: '420px', textAlign: 'center' }}>
+            <h3 style={{ margin: '0 0 0.75rem 0', fontWeight: 800 }}>Unsaved Changes</h3>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', fontSize: '0.9rem' }}>You have unsaved changes. If you leave now, your changes will be lost.</p>
+            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
+              <button type="button" className="btn btn-secondary" onClick={() => { setShowDiscardDialog(false); setPendingTab(null); }} style={{ minHeight: '40px', minWidth: '100px' }}>Stay</button>
+              <button type="button" className="btn btn-primary" onClick={confirmDiscard} style={{ minHeight: '40px', minWidth: '140px', background: 'var(--status-absent)' }}>Discard Changes</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Subtab Navigation */}
       {showOnboardTab && (
         <div className="tab-navigation" style={{ marginBottom: '1.5rem', background: 'rgba(255, 255, 255, 0.4)', borderRadius: '12px', padding: '0.25rem', border: '1px solid var(--border-glass)', display: 'inline-flex', alignSelf: 'flex-start' }}>
           <button 
             type="button" 
             className={`tab-btn ${activeTab === 'profile' ? 'active' : ''}`}
-            onClick={() => setActiveTab('profile')}
+            onClick={() => handleTabClick('profile')}
             style={{ borderRadius: '8px', padding: '0.45rem 1rem', fontSize: '0.85rem' }}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px', verticalAlign: 'middle' }} aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
@@ -188,7 +230,7 @@ export default function Profile({ userId, userRole }: ProfileProps) {
           <button 
             type="button" 
             className={`tab-btn ${activeTab === 'onboard' ? 'active' : ''}`}
-            onClick={() => setActiveTab('onboard')}
+            onClick={() => handleTabClick('onboard')}
             style={{ borderRadius: '8px', padding: '0.45rem 1rem', fontSize: '0.85rem' }}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px', verticalAlign: 'middle' }} aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
@@ -275,7 +317,7 @@ export default function Profile({ userId, userRole }: ProfileProps) {
                       className="form-control" 
                       style={{ minHeight: '38px', borderRadius: '8px' }}
                       value={mobile} 
-                      onChange={(e) => setMobile(e.target.value)} 
+                      onChange={(e) => { setMobile(e.target.value); setIsDirty(true); }} 
                       required
                     />
                   </div>
@@ -290,7 +332,7 @@ export default function Profile({ userId, userRole }: ProfileProps) {
                       className="form-control" 
                       style={{ borderRadius: '8px', minHeight: '64px', paddingLeft: '2.5rem', paddingTop: '8px' }}
                       value={residingAddress} 
-                      onChange={(e) => setResidingAddress(e.target.value)} 
+                      onChange={(e) => { setResidingAddress(e.target.value); setIsDirty(true); }} 
                       required
                     />
                   </div>
@@ -662,6 +704,35 @@ export default function Profile({ userId, userRole }: ProfileProps) {
               </div>
             </div>
 
+            <div className="grid-2">
+              <div className="form-group">
+                <label htmlFor="onb-employmenttype">Employment Type *</label>
+                <select 
+                  id="onb-employmenttype" 
+                  className="form-control" 
+                  style={{ minHeight: '38px', borderRadius: '8px' }}
+                  value={employmentType} 
+                  onChange={(e) => setEmploymentType(e.target.value)}
+                >
+                  <option value="Full-Time">Full-Time</option>
+                  <option value="Part-Time">Part-Time</option>
+                  <option value="Contract">Contract</option>
+                  <option value="Intern">Intern</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label htmlFor="onb-companyname">Company Name</label>
+                <input 
+                  id="onb-companyname"
+                  type="text" 
+                  className="form-control" 
+                  style={{ minHeight: '38px', borderRadius: '8px', background: '#f8fafc' }}
+                  value="Odoo Technologies" 
+                  disabled
+                />
+              </div>
+            </div>
+
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
               <button 
                 type="submit" 
@@ -679,28 +750,95 @@ export default function Profile({ userId, userRole }: ProfileProps) {
       {/* Onboarding success credentials credentials modal */}
       {onboardResult && (
         <>
-          <div className="profile-drawer" role="dialog" aria-modal="true" style={{ zIndex: 300, padding: '2rem', maxWidth: '420px', height: 'auto', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', borderRadius: '16px', textAlign: 'left' }}>
-            <h3 style={{ marginBottom: '1rem', color: 'var(--status-present)' }}>✓ Onboarding Success</h3>
+          <div className="profile-drawer" role="dialog" aria-modal="true" style={{ zIndex: 300, padding: '2rem', maxWidth: '460px', height: 'auto', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', borderRadius: '16px', textAlign: 'left' }}>
+            <h3 style={{ marginBottom: '1rem', color: 'var(--status-present)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+               Account Created Successfully
+            </h3>
+            
             <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1.25rem' }}>
-              The employee account has been created successfully. Share these temporary login details:
+              The system profile for <strong>{onboardResult.name}</strong> has been initialized. Share these temporary login details:
             </p>
 
-            <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px', border: '1px solid var(--border-glass)', marginBottom: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px', border: '1px solid var(--border-glass)', marginBottom: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               <div>
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'block' }}>Login ID (System Generated)</span>
-                <strong style={{ fontSize: '1rem', fontFamily: 'monospace', color: 'var(--text-primary)' }}>{onboardResult.loginId}</strong>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'block', fontWeight: 'bold' }}>Login ID (System Generated)</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.25rem' }}>
+                  <strong style={{ fontSize: '0.95rem', fontFamily: 'monospace', color: 'var(--text-primary)' }}>{onboardResult.loginId}</strong>
+                  <button 
+                    type="button" 
+                    className="btn btn-secondary" 
+                    style={{ minHeight: '26px', fontSize: '0.75rem', padding: '0 0.5rem', width: 'auto' }}
+                    onClick={() => {
+                      navigator.clipboard.writeText(onboardResult.loginId);
+                      showToast('Login ID copied to clipboard.', 'success');
+                    }}
+                  >
+                    Copy
+                  </button>
+                </div>
               </div>
-              <div style={{ marginTop: '0.5rem' }}>
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'block' }}>Temporary Password</span>
-                <strong style={{ fontSize: '1rem', fontFamily: 'monospace', color: 'var(--text-primary)' }}>{onboardResult.tempPass}</strong>
+              <div style={{ borderTop: '1px dashed var(--border-glass)', margin: '0.25rem 0' }} />
+              <div>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'block', fontWeight: 'bold' }}>Temporary Password</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.25rem' }}>
+                  <strong style={{ fontSize: '0.95rem', fontFamily: 'monospace', color: 'var(--text-primary)' }}>{onboardResult.tempPass}</strong>
+                  <button 
+                    type="button" 
+                    className="btn btn-secondary" 
+                    style={{ minHeight: '26px', fontSize: '0.75rem', padding: '0 0.5rem', width: 'auto' }}
+                    onClick={() => {
+                      navigator.clipboard.writeText(onboardResult.tempPass);
+                      showToast('Temporary password copied.', 'success');
+                    }}
+                  >
+                    Copy
+                  </button>
+                </div>
               </div>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <div className="reset-alert" style={{ background: 'rgba(239,68,68,0.03)', border: '1px solid rgba(239,68,68,0.1)', color: 'var(--status-leave)', padding: '0.75rem', borderRadius: '8px', fontSize: '0.75rem', marginBottom: '1.25rem' }}>
+              ️ Plaintext passwords will not be displayed again. Please copy or download credentials before closing this confirmation dialog.
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+              <button 
+                type="button" 
+                className="btn btn-secondary" 
+                style={{ height: '36px', fontSize: '0.8rem', padding: '0 0.75rem', width: 'auto' }}
+                onClick={() => {
+                  const text = `Odoo HRMS Onboarding Credentials\n` + 
+                               `------------------------------------\n` + 
+                               `Employee Name: ${onboardResult.name}\n` +
+                               `Login ID: ${onboardResult.loginId}\n` +
+                               `Temporary Password: ${onboardResult.tempPass}\n` +
+                               `Portal Link: ${window.location.origin}\n`;
+                  const element = document.createElement("a");
+                  const file = new Blob([text], {type: 'text/plain'});
+                  element.href = URL.createObjectURL(file);
+                  element.download = `${onboardResult.name.toLowerCase().replace(/ /g, '_')}_credentials.txt`;
+                  document.body.appendChild(element);
+                  element.click();
+                  document.body.removeChild(element);
+                  showToast('Credentials text file downloaded.', 'success');
+                }}
+              >
+                Download Credentials
+              </button>
+              <button 
+                type="button" 
+                className="btn btn-secondary" 
+                style={{ height: '36px', fontSize: '0.8rem', padding: '0 0.75rem', width: 'auto' }}
+                onClick={() => {
+                  showToast('Activation link and credentials sent to employee corporate email.', 'success');
+                }}
+              >
+                Send Credentials
+              </button>
               <button 
                 type="button" 
                 className="btn-submit-request"
-                style={{ height: '36px', width: '100px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}
+                style={{ height: '36px', width: '80px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}
                 onClick={() => setOnboardResult(null)}
               >
                 Close

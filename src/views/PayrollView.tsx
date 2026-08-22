@@ -129,7 +129,7 @@ export default function PayrollView({ userRole }: PayrollViewProps) {
     return (
       <div className="page-container">
         <div className="card glass-card error-card" style={{ padding: '3rem', textAlign: 'center' }}>
-          <span style={{ fontSize: '3rem', display: 'block', marginBottom: '1rem' }}>🚫</span>
+          <span style={{ fontSize: '3rem', display: 'block', marginBottom: '1rem' }}></span>
           <h3>403 Access Forbidden</h3>
           <p style={{ color: 'var(--text-secondary)', marginTop: '0.5rem' }}>You do not have administrative permissions to view or edit payroll configuration settings.</p>
         </div>
@@ -327,10 +327,10 @@ export default function PayrollView({ userRole }: PayrollViewProps) {
                         <td style={{ textAlign: 'center' }}>
                           <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
                             <button type="button" className="action-dots-btn" style={{ width: '26px', height: '26px', fontSize: '0.8rem' }} title="Edit" onClick={() => showToast('Editing component... (Mocked)', 'info')}>
-                              ✎
+                              
                             </button>
                             <button type="button" className="action-dots-btn" style={{ width: '26px', height: '26px', fontSize: '0.8rem', color: 'var(--status-leave)' }} title="Delete" onClick={() => showToast('Deleting component... (Mocked)', 'info')}>
-                              🗑
+                              
                             </button>
                           </div>
                         </td>
@@ -362,7 +362,7 @@ export default function PayrollView({ userRole }: PayrollViewProps) {
             </div>
           ) : (
             <div style={{ padding: '2rem 0', textAlign: 'center', color: 'var(--text-secondary)' }}>
-              ⚠️ Choose an employee to populate configurations.
+              ️ Choose an employee to populate configurations.
             </div>
           )}
         </div>
@@ -459,7 +459,7 @@ export default function PayrollView({ userRole }: PayrollViewProps) {
 
               {payableDaysDetails.missingDays > 0 && (
                 <div className="missing-alert" style={{ background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.15)', color: '#d97706', padding: '0.75rem 1rem', borderRadius: '8px', fontSize: '0.8rem', marginBottom: '1.25rem' }}>
-                  ⚠️ <strong>Unrecorded Check-ins:</strong> The employee is missing {payableDaysDetails.missingDays} attendance check-ins this month (Unrecorded absences reduce payable days).
+                  ️ <strong>Unrecorded Check-ins:</strong> The employee is missing {payableDaysDetails.missingDays} attendance check-ins this month (Unrecorded absences reduce payable days).
                 </div>
               )}
 

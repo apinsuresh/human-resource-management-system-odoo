@@ -25,12 +25,24 @@ export default function Sidebar({
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  const getSidebarSvg = (id: string) => {
+    const strokeProps = { width: "18", height: "18", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
+    switch (id) {
+      case 'dashboard': return <svg {...strokeProps}><rect x="3" y="3" width="7" height="9" /><rect x="14" y="3" width="7" height="5" /><rect x="14" y="12" width="7" height="9" /><rect x="3" y="16" width="7" height="5" /></svg>;
+      case 'directory': return <svg {...strokeProps}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>;
+      case 'profile': return <svg {...strokeProps}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>;
+      case 'timeoff': return <svg {...strokeProps}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /></svg>;
+      case 'payroll': return <svg {...strokeProps}><rect x="1" y="4" width="22" height="16" rx="2" ry="2" /><line x1="1" y1="10" x2="23" y2="10" /></svg>;
+      default: return null;
+    }
+  };
+
   const navItems = [
-    { id: 'dashboard', label: 'Dashboard & Log', icon: '📊', roles: ['ADMIN', 'HR_OFFICER', 'EMPLOYEE'] },
-    { id: 'directory', label: 'Employee Directory', icon: '👥', roles: ['ADMIN', 'HR_OFFICER', 'EMPLOYEE'] },
-    { id: 'profile', label: 'My Profile', icon: '👤', roles: ['ADMIN', 'HR_OFFICER', 'EMPLOYEE'] },
-    { id: 'timeoff', label: 'Time Off / Leaves', icon: '✈️', roles: ['ADMIN', 'HR_OFFICER', 'EMPLOYEE'] },
-    { id: 'payroll', label: 'Salary & Payroll', icon: '💰', roles: ['ADMIN'] },
+    { id: 'dashboard', label: 'Dashboard & Log', roles: ['ADMIN', 'HR_OFFICER', 'EMPLOYEE'] },
+    { id: 'directory', label: 'Employee Directory', roles: ['ADMIN', 'HR_OFFICER', 'EMPLOYEE'] },
+    { id: 'profile', label: 'My Profile', roles: ['ADMIN', 'HR_OFFICER', 'EMPLOYEE'] },
+    { id: 'timeoff', label: 'Time Off / Leaves', roles: ['ADMIN', 'HR_OFFICER', 'EMPLOYEE'] },
+    { id: 'payroll', label: 'Salary & Payroll', roles: ['ADMIN'] },
   ];
 
   const filteredNavItems = navItems.filter(item => item.roles.includes(userRole));
@@ -56,7 +68,7 @@ export default function Sidebar({
         aria-label="Toggle Navigation Drawer"
         aria-expanded={mobileMenuOpen}
       >
-        ☰
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="18" x2="21" y2="18" /></svg>
       </button>
 
       {/* Sidebar Drawer */}
@@ -95,7 +107,7 @@ export default function Sidebar({
                   setProfileDropdownOpen(false);
                 }}
               >
-                👤 My Profile
+                My Profile
               </button>
               <button 
                 type="button" 
@@ -105,7 +117,7 @@ export default function Sidebar({
                   setProfileDropdownOpen(false);
                 }}
               >
-                ➔ Log Out
+                Log Out
               </button>
             </div>
           )}
@@ -121,7 +133,7 @@ export default function Sidebar({
                   className={`nav-link-btn ${currentView === item.id ? 'active' : ''}`}
                   onClick={() => handleNavClick(item.id)}
                 >
-                  <span className="nav-icon">{item.icon}</span>
+                  <span className="nav-icon">{getSidebarSvg(item.id)}</span>
                   <span className="nav-label">{item.label}</span>
                 </button>
               </li>
@@ -137,11 +149,12 @@ export default function Sidebar({
             onClick={onToggleTheme}
             aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} theme`}
           >
-            {theme === 'light' ? '🌙 Dark Mode' : '☀️ Light Mode'}
+            {theme === 'light' ? 'Dark Mode' : 'Light Mode'}
           </button>
           <div className="sidebar-ver">v1.0.0</div>
         </div>
       </aside>
+
 
       {/* Backdrop for mobile drawer */}
       {mobileMenuOpen && (

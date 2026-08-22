@@ -28,6 +28,7 @@ export default function AttendanceView({ employeeId, userRole }: AttendanceViewP
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [monthOffset, setMonthOffset] = useState(0);
+  const [personalLogs, setPersonalLogs] = useState<Attendance[]>([]);
 
   // HR Workspace specific states
   const [pendingLeaves, setPendingLeaves] = useState<any[]>([]);
@@ -76,6 +77,25 @@ export default function AttendanceView({ employeeId, userRole }: AttendanceViewP
       console.error(err);
     }
   };
+
+  const loadPersonalLogs = () => {
+    try {
+      const logs = getStoredData<Attendance>('hrms_attendance') || [];
+      const filtered = logs.filter((log) => {
+        const d = new Date(log.date);
+        return log.employeeId === employeeId && d.getMonth() === selectedMonth && d.getFullYear() === selectedYear;
+      });
+      setPersonalLogs(filtered.sort((a, b) => b.date.localeCompare(a.date)));
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  useEffect(() => {
+    loadPersonalLogs();
+    window.addEventListener('hrms-attendance-update', loadPersonalLogs);
+    return () => window.removeEventListener('hrms-attendance-update', loadPersonalLogs);
+  }, [selectedMonth, selectedYear, employeeId]);
 
   // Sync leave approvals lists for HR role
   useEffect(() => {
@@ -262,7 +282,7 @@ export default function AttendanceView({ employeeId, userRole }: AttendanceViewP
           {userRole === 'HR_OFFICER' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', textAlign: 'left' }}>
               <div>
-                <h2 style={{ fontSize: '1.5rem', fontWeight: 800 }}>Good Morning, HR Team! 👥</h2>
+                <h2 style={{ fontSize: '1.5rem', fontWeight: 800 }}>Good Morning, HR Team! </h2>
                 <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>Here's what needs your attention today.</p>
               </div>
 
@@ -439,7 +459,7 @@ export default function AttendanceView({ employeeId, userRole }: AttendanceViewP
           {userRole === 'ADMIN' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', textAlign: 'left' }}>
               <div>
-                <h2 style={{ fontSize: '1.5rem', fontWeight: 800 }}>System Control Center ⚙️</h2>
+                <h2 style={{ fontSize: '1.5rem', fontWeight: 800 }}>System Control Center ️</h2>
                 <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>Uptime monitoring and system health logs.</p>
               </div>
 
@@ -578,7 +598,7 @@ export default function AttendanceView({ employeeId, userRole }: AttendanceViewP
           {userRole === 'EMPLOYEE' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', textAlign: 'left' }}>
               <div>
-                <h2 style={{ fontSize: '1.5rem', fontWeight: 800 }}>Executive Overview 📊</h2>
+                <h2 style={{ fontSize: '1.5rem', fontWeight: 800 }}>Executive Overview </h2>
                 <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>Workforce and compensation visibility intelligence.</p>
               </div>
 
@@ -773,7 +793,7 @@ export default function AttendanceView({ employeeId, userRole }: AttendanceViewP
                   {employee?.firstName.substring(0, 2).toUpperCase() || 'SY'}
                 </div>
                 <div className="hero-welcome-info" style={{ textAlign: 'left' }}>
-                  <h2>Good Morning, {employee?.firstName || 'System'}! 👋</h2>
+                  <h2>Good Morning, {employee?.firstName || 'System'}! </h2>
                   <p>Have a productive day ahead.</p>
                   <div className="hero-badge-row">
                     <span className={`badge-pill-outline ${activeCheckIn ? 'on-duty' : ''}`}>
@@ -979,6 +999,60 @@ export default function AttendanceView({ employeeId, userRole }: AttendanceViewP
                 <strong>No leave logs recorded.</strong>
                 <span>All good! No leave requests yet.</span>
               </div>
+            </div>
+          </div>
+
+          {/* Bottom Row: Tabular History of Logs */}
+          <div className="card glass-card" style={{ marginTop: '1.5rem', textAlign: 'left' }}>
+            <div className="card-title-row" style={{ borderBottom: '1px solid var(--border-glass)', paddingBottom: '0.75rem', marginBottom: '1rem' }}>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 800 }}>Attendance History Logs</h3>
+            </div>
+            
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--border-glass)', color: 'var(--text-secondary)' }}>
+                    <th style={{ padding: '0.75rem', textAlign: 'left' }}>Date</th>
+                    <th style={{ padding: '0.75rem', textAlign: 'left' }}>Status</th>
+                    <th style={{ padding: '0.75rem', textAlign: 'left' }}>Check In</th>
+                    <th style={{ padding: '0.75rem', textAlign: 'left' }}>Check Out</th>
+                    <th style={{ padding: '0.75rem', textAlign: 'right' }}>Work Hours</th>
+                    <th style={{ padding: '0.75rem', textAlign: 'right' }}>Extra Hours</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {personalLogs.length > 0 ? (
+                    personalLogs.map((log) => {
+                      const dateFormatted = new Date(log.date).toLocaleDateString([], { day: '2-digit', month: '2-digit', year: 'numeric' });
+                      const checkInFormatted = log.checkInAt ? new Date(log.checkInAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--';
+                      const checkOutFormatted = log.checkOutAt ? new Date(log.checkOutAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--';
+                      
+                      return (
+                        <tr key={log.id} style={{ borderBottom: '1px solid var(--border-glass)' }}>
+                          <td style={{ padding: '0.75rem' }}>{dateFormatted}</td>
+                          <td style={{ padding: '0.75rem' }}>
+                            <span className="badge badge-present" style={{ padding: '0.2rem 0.5rem', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 'bold' }}>
+                              ● Present
+                            </span>
+                          </td>
+                          <td style={{ padding: '0.75rem' }}>{checkInFormatted}</td>
+                          <td style={{ padding: '0.75rem' }}>{checkOutFormatted}</td>
+                          <td style={{ padding: '0.75rem', textAlign: 'right', fontWeight: 'bold' }}>{log.workHours || 0} hrs</td>
+                          <td style={{ padding: '0.75rem', textAlign: 'right', color: (log.extraHours || 0) > 0 ? 'var(--accent-primary)' : 'var(--text-secondary)' }}>
+                            {log.extraHours || 0} hrs
+                          </td>
+                        </tr>
+                      );
+                    })
+                  ) : (
+                    <tr>
+                      <td colSpan={6} style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                        No attendance logs found for this period.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
         </>
