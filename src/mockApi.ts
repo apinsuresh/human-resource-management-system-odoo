@@ -284,6 +284,155 @@ export const initializeMockDB = () => {
   if (!localStorage.getItem(KEYS.LEAVE_REQUESTS)) {
     localStorage.setItem(KEYS.LEAVE_REQUESTS, JSON.stringify([]));
   }
+
+  // Seeding Employer Details Company Settings
+  if (!localStorage.getItem('hrms_company_settings')) {
+    localStorage.setItem('hrms_company_settings', JSON.stringify({
+      companyName: 'FORTHEYE Technologies',
+      industry: 'Technology',
+      companyEmail: 'info@fortheye.com',
+      phoneNumber: '+91 98765 43210',
+      website: 'https://www.fortheye.com',
+      regNumber: 'U72900TZ2024PTC032101',
+      address: '123, Business Park, Coimbatore, Tamil Nadu, India - 641001',
+      estDate: '2024-01-15',
+      companySize: '101-200',
+      companyType: 'Private Limited',
+      country: 'India',
+      state: 'Tamil Nadu',
+      city: 'Coimbatore'
+    }));
+  }
+
+  // Seeding Departments
+  if (!localStorage.getItem('hrms_departments')) {
+    localStorage.setItem('hrms_departments', JSON.stringify([
+      { id: 'dept-eng', name: 'Engineering', headId: 'emp-employee-uuid', isActive: true },
+      { id: 'dept-hr', name: 'Human Resources', headId: 'emp-hr-uuid', isActive: true },
+      { id: 'dept-ops', name: 'Operations', headId: 'emp-admin-uuid', isActive: true }
+    ]));
+  }
+
+  // Seeding Designations
+  if (!localStorage.getItem('hrms_designations')) {
+    localStorage.setItem('hrms_designations', JSON.stringify([
+      { id: 'des-se', name: 'Software Engineer', isActive: true },
+      { id: 'des-pm', name: 'Product Manager', isActive: true },
+      { id: 'des-hro', name: 'HR Officer', isActive: true }
+    ]));
+  }
+
+  // Seeding Branches
+  if (!localStorage.getItem('hrms_branches')) {
+    localStorage.setItem('hrms_branches', JSON.stringify([
+      { id: 'loc-blr', name: 'Bangalore Office', isActive: true },
+      { id: 'loc-cbe', name: 'Coimbatore Office', isActive: true }
+    ]));
+  }
+
+  // Seeding Cost Centers
+  if (!localStorage.getItem('hrms_cost_centers')) {
+    localStorage.setItem('hrms_cost_centers', JSON.stringify([
+      { id: 'cc-rd', name: 'R&D Division', isActive: true },
+      { id: 'cc-hq', name: 'Corporate Headquarter', isActive: true }
+    ]));
+  }
+
+  // Seeding Workforce policies
+  if (!localStorage.getItem('hrms_workforce_policies')) {
+    localStorage.setItem('hrms_workforce_policies', JSON.stringify({
+      idFormat: 'EMP-{YYYY}-{SERIAL}',
+      loginIdGeneration: 'FIRSTNAME_LASTNAME',
+      serialNumber: 1001,
+      employmentTypes: ['Full-time', 'Part-time', 'Contract', 'Intern'],
+      probationPeriodDays: 90,
+      defaultLocation: 'loc-blr',
+      workingHours: 8,
+      policiesText: 'Standard company terms and code of conduct apply.'
+    }));
+  }
+
+  // Seeding Attendance Settings
+  if (!localStorage.getItem('hrms_attendance_settings')) {
+    localStorage.setItem('hrms_attendance_settings', JSON.stringify({
+      workingDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
+      checkInTime: '09:00 AM',
+      checkOutTime: '06:00 PM',
+      breakDurationMins: 60,
+      gracePeriodMins: 15,
+      lateArrivalPenalty: 'WARN_AND_DEDUCT',
+      earlyCheckoutPenalty: 'WARN',
+      overtimeEnabled: true,
+      halfDayThresholdHours: 4,
+      missingAttendanceRule: 'MARK_ABSENT',
+      requireApproval: true
+    }));
+  }
+
+  // Seeding Leave Policies
+  if (!localStorage.getItem('hrms_leave_policies')) {
+    localStorage.setItem('hrms_leave_policies', JSON.stringify({
+      allocations: [
+        { type: 'PAID_TIME_OFF', days: 24, carryForward: true, maxCarryForward: 5, expiryDate: '2026-12-31' },
+        { type: 'SICK_LEAVE', days: 7, carryForward: false, maxCarryForward: 0, expiryDate: '2026-12-31' },
+        { type: 'UNPAID_TIME_OFF', days: 30, carryForward: false, maxCarryForward: 0, expiryDate: '2026-12-31' }
+      ],
+      halfDayAllowed: true,
+      maxConsecutiveDays: 10,
+      approvalHierarchy: 'MANAGER_THEN_HR',
+      docRequiredThresholdDays: 2,
+      customLeaves: []
+    }));
+  }
+
+  // Seeding Payroll Settings
+  if (!localStorage.getItem('hrms_payroll_settings')) {
+    localStorage.setItem('hrms_payroll_settings', JSON.stringify({
+      frequency: 'MONTHLY',
+      cycleStartDay: 1,
+      cycleEndDay: 30,
+      pfEmployeeRate: 0.12,
+      pfEmployerRate: 0.12,
+      professionalTax: 20000,
+      enabledComponents: ['BASIC', 'HRA', 'STANDARD_ALLOWANCE', 'PERFORMANCE_BONUS', 'LTA', 'FIXED_ALLOWANCE', 'PROVIDENT_FUND', 'PROFESSIONAL_TAX'],
+      approvalRequired: true
+    }));
+  }
+
+  // Seeding Notifications preferences
+  if (!localStorage.getItem('hrms_notifications_settings')) {
+    localStorage.setItem('hrms_notifications_settings', JSON.stringify({
+      leave_request: ['in-app', 'email'],
+      leave_approval: ['in-app', 'email'],
+      attendance_exception: ['in-app', 'push'],
+      new_employee: ['in-app'],
+      payroll_completion: ['email', 'push'],
+      performance_review: ['in-app'],
+      upcoming_deadline: ['in-app', 'email'],
+      security_alert: ['in-app', 'email', 'push']
+    }));
+  }
+
+  // Seeding Security Settings
+  if (!localStorage.getItem('hrms_security_settings')) {
+    localStorage.setItem('hrms_security_settings', JSON.stringify({
+      mfaPreference: 'OPTIONAL',
+      loginNotifications: true,
+      sessionTimeoutMins: 30,
+      activeSessions: [
+        { id: 'sess-1', device: 'macOS Chrome', ip: '192.168.1.5', lastActive: 'Just now', isCurrent: true }
+      ]
+    }));
+  }
+
+  // Seeding Integrations
+  if (!localStorage.getItem('hrms_integrations')) {
+    localStorage.setItem('hrms_integrations', JSON.stringify([
+      { id: 'int-1', name: 'QuickBooks Payroll', type: 'Payroll', status: 'CONNECTED', lastSync: '10 minutes ago', apiKey: '••••••••••••••••' },
+      { id: 'int-2', name: 'Xero Accounting', type: 'Accounting', status: 'CONNECTED', lastSync: '1 hour ago', apiKey: '••••••••••••••••' },
+      { id: 'int-3', name: 'Google Calendar', type: 'Calendar', status: 'DISCONNECTED', lastSync: 'Never', apiKey: '' }
+    ]));
+  }
 };
 
 // Database Accessors
@@ -974,4 +1123,68 @@ export const mockCreateTask = (task: Omit<ProjectTask, 'id'>): ProjectTask[] => 
   tasks.push(newTask);
   localStorage.setItem('hrms_tasks', JSON.stringify(tasks));
   return tasks;
+};
+
+export interface PayslipCalculationResult {
+  month: number;
+  year: number;
+  baseWage: number;
+  proratedWage: number;
+  components: Array<{
+    name: string;
+    computationType: string;
+    computationValue: number;
+    computedAmount: number;
+  }>;
+  pfEmployee: number;
+  pfEmployer: number;
+  professionalTax: number;
+  totalDeductions: number;
+  netSalary: number;
+  payableDays: number;
+  workingDays: number;
+}
+
+export const mockCalculatePayslip = (
+  salaryConfig: SalaryConfig,
+  payableDays: number,
+  totalWorkingDays: number
+): PayslipCalculationResult => {
+  if (totalWorkingDays === 0) {
+    throw new Error('Total working days cannot be zero.');
+  }
+
+  const prorationRatio = payableDays / totalWorkingDays;
+  const baseWage = salaryConfig.wageAmount;
+  const proratedWage = Math.round(baseWage * prorationRatio);
+
+  const proratedComponents = salaryConfig.components.map((comp) => ({
+    ...comp,
+    computedAmount: Math.round(comp.computedAmount * prorationRatio),
+  }));
+
+  const basicComp = proratedComponents.find(c => c.name === 'BASIC');
+  const basicAmount = basicComp ? basicComp.computedAmount : 0;
+  
+  const pfEmployee = Math.round(basicAmount * salaryConfig.pfEmployeeRate);
+  const pfEmployer = Math.round(basicAmount * salaryConfig.pfEmployerRate);
+  const pt = payableDays > 0 ? salaryConfig.professionalTax : 0;
+
+  const totalDeductions = pfEmployee + pt;
+  const netSalary = proratedWage - totalDeductions;
+
+  return {
+    month: 0,
+    year: 0,
+    baseWage,
+    proratedWage,
+    components: proratedComponents,
+    pfEmployee,
+    pfEmployer,
+    professionalTax: pt,
+    totalDeductions,
+    netSalary,
+    payableDays,
+    workingDays: totalWorkingDays
+  };
 };

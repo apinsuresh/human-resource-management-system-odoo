@@ -1,10 +1,52 @@
 import { useState, useEffect } from 'react';
 import { showToast } from '../components/Toast';
 
+interface Department {
+  id: string;
+  name: string;
+  headId: string;
+  isActive: boolean;
+}
+
+interface Designation {
+  id: string;
+  name: string;
+  isActive: boolean;
+}
+
+interface Branch {
+  id: string;
+  name: string;
+  isActive: boolean;
+}
+
+interface CostCenter {
+  id: string;
+  name: string;
+  isActive: boolean;
+}
+
 export default function SettingsView() {
   const [activeSubTab, setActiveSubTab] = useState('employer');
+  const [pendingTab, setPendingTab] = useState<string | null>(null);
+  
+  // Dirtiness indicator for unsaved changes warning
+  const [isDirty, setIsDirty] = useState(false);
+  const [showDiscardModal, setShowDiscardModal] = useState(false);
 
-  // Form Fields State
+  // Authenticated Role Access boundary
+  const [userRole, setUserRole] = useState('EMPLOYEE');
+  useEffect(() => {
+    const sess = JSON.parse(localStorage.getItem('hrms_current_user') || 'null');
+    if (sess && sess.role) {
+      setUserRole(sess.role);
+    }
+  }, []);
+
+  // ----------------------------------------------------
+  // SECTION 1: EMPLOYER DETAILS STATES
+  // ----------------------------------------------------
+  const [companyLogo, setCompanyLogo] = useState<string | null>(null);
   const [companyName, setCompanyName] = useState('FORTHEYE Technologies');
   const [industry, setIndustry] = useState('Technology');
   const [companyEmail, setCompanyEmail] = useState('info@fortheye.com');
@@ -12,88 +54,538 @@ export default function SettingsView() {
   const [website, setWebsite] = useState('https://www.fortheye.com');
   const [regNumber, setRegNumber] = useState('U72900TZ2024PTC032101');
   const [address, setAddress] = useState('123, Business Park, Coimbatore, Tamil Nadu, India - 641001');
-  
   const [estDate, setEstDate] = useState('2024-01-15');
   const [companySize, setCompanySize] = useState('101-200');
   const [companyType, setCompanyType] = useState('Private Limited');
+  const [country, setCountry] = useState('India');
+  const [state, setState] = useState('Tamil Nadu');
+  const [city, setCity] = useState('Coimbatore');
 
-  // Load state from localStorage on init
-  useEffect(() => {
+  // Validation feedback state
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
+  // ----------------------------------------------------
+  // SECTION 2: ORGANIZATION SETTINGS STATES
+  // ----------------------------------------------------
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [designations, setDesignations] = useState<Designation[]>([]);
+  const [branches, setBranches] = useState<Branch[]>([]);
+  const [costCenters, setCostCenters] = useState<CostCenter[]>([]);
+  
+  // Search states
+  const [deptSearch, setDeptSearch] = useState('');
+  const [empSearch, setEmpSearch] = useState('');
+  
+  // Org Add States
+  const [newDeptName, setNewDeptName] = useState('');
+  const [newDesigName, setNewDesigName] = useState('');
+  const [newBranchName, setNewBranchName] = useState('');
+  const [newCCName, setNewCCName] = useState('');
+
+  // ----------------------------------------------------
+  // SECTION 3: WORKFORCE SETTINGS STATES
+  // ----------------------------------------------------
+  const [idFormat, setIdFormat] = useState('EMP-{YYYY}-{SERIAL}');
+  const [loginIdGen, setLoginIdGen] = useState('FIRSTNAME_LASTNAME');
+  const [serialNumber, setSerialNumber] = useState(1001);
+  const [employmentTypes, setEmploymentTypes] = useState<string[]>(['Full-time', 'Part-time', 'Contract', 'Intern']);
+  const [probationDays, setProbationDays] = useState(90);
+  const [defaultLoc, setDefaultLoc] = useState('loc-blr');
+  const [workHours, setWorkHours] = useState(8);
+  const [policiesText, setPoliciesText] = useState('Standard company terms apply.');
+
+  // ----------------------------------------------------
+  // SECTION 4: ATTENDANCE SETTINGS STATES
+  // ----------------------------------------------------
+  const [workingDays, setWorkingDays] = useState<string[]>(['Mon', 'Tue', 'Wed', 'Thu', 'Fri']);
+  const [checkInTime, setCheckInTime] = useState('09:00 AM');
+  const [checkOutTime, setCheckOutTime] = useState('06:00 PM');
+  const [breakMins, setBreakMins] = useState(60);
+  const [graceMins, setGraceMins] = useState(15);
+  const [latePenalty, setLatePenalty] = useState('WARN_AND_DEDUCT');
+  const [earlyPenalty, setEarlyPenalty] = useState('WARN');
+  const [otEnabled, setOtEnabled] = useState(true);
+  const [halfDayHours, setHalfDayHours] = useState(4);
+  const [missingRule, setMissingRule] = useState('MARK_ABSENT');
+  const [requireAttApproval, setRequireAttApproval] = useState(true);
+
+  // ----------------------------------------------------
+  // SECTION 5: LEAVE POLICIES STATES
+  // ----------------------------------------------------
+  const [leaveAllocations, setLeaveAllocations] = useState<any[]>([]);
+  const [halfDayAllowed, setHalfDayAllowed] = useState(true);
+  const [maxConsecutiveDays, setMaxConsecutiveDays] = useState(10);
+  const [leaveApprovalHierarchy, setLeaveApprovalHierarchy] = useState('MANAGER_THEN_HR');
+  const [docThresholdDays, setDocThresholdDays] = useState(2);
+  
+  // Custom Leave types states
+  const [newLeaveName, setNewLeaveName] = useState('');
+  const [newLeaveQuota, setNewLeaveQuota] = useState(5);
+
+  // ----------------------------------------------------
+  // SECTION 6: PAYROLL SETTINGS STATES
+  // ----------------------------------------------------
+  const [payFreq, setPayFreq] = useState('MONTHLY');
+  const [payCycleStart, setPayCycleStart] = useState(1);
+  const [payCycleEnd, setPayCycleEnd] = useState(30);
+  const [pfEmployeeRate, setPfEmployeeRate] = useState(0.12);
+  const [pfEmployerRate, setPfEmployerRate] = useState(0.12);
+  const [professionalTax, setProfessionalTax] = useState(200);
+  const [enabledComponents, setEnabledComponents] = useState<string[]>([]);
+  const [payrollApprovalReq, setPayrollApprovalReq] = useState(true);
+
+  // ----------------------------------------------------
+  // SECTION 7: NOTIFICATIONS PREFERENCES STATES
+  // ----------------------------------------------------
+  const [notifyPreferences, setNotifyPreferences] = useState<Record<string, string[]>>({});
+
+  // ----------------------------------------------------
+  // SECTION 8: SECURITY SETTINGS STATES
+  // ----------------------------------------------------
+  const [mfaPreference, setMfaPreference] = useState('OPTIONAL');
+  const [loginAlertsEnabled, setLoginAlertsEnabled] = useState(true);
+  const [sessionTimeoutMins, setSessionTimeoutMins] = useState(30);
+  const [activeSessions, setActiveSessions] = useState<any[]>([]);
+
+  // ----------------------------------------------------
+  // SECTION 9: INTEGRATIONS STATES
+  // ----------------------------------------------------
+  const [integrationsList, setIntegrationsList] = useState<any[]>([]);
+  const [activeIntegrationConfig, setActiveIntegrationConfig] = useState<any | null>(null);
+  const [apiClientId, setApiClientId] = useState('');
+  const [apiClientSecret, setApiClientSecret] = useState('');
+
+  // ----------------------------------------------------
+  // LOAD & SAVE INTEGRATION
+  // ----------------------------------------------------
+  const loadDatabaseValues = () => {
     try {
-      const stored = localStorage.getItem('hrms_company_details');
-      if (stored) {
-        const data = JSON.parse(stored);
-        if (data.companyName) setCompanyName(data.companyName);
-        if (data.industry) setIndustry(data.industry);
-        if (data.companyEmail) setCompanyEmail(data.companyEmail);
-        if (data.phoneNumber) setPhoneNumber(data.phoneNumber);
-        if (data.website) setWebsite(data.website);
-        if (data.regNumber) setRegNumber(data.regNumber);
-        if (data.address) setAddress(data.address);
-        if (data.estDate) setEstDate(data.estDate);
-        if (data.companySize) setCompanySize(data.companySize);
-        if (data.companyType) setCompanyType(data.companyType);
+      // 1. Company settings
+      const company = JSON.parse(localStorage.getItem('hrms_company_settings') || 'null');
+      if (company) {
+        setCompanyName(company.companyName || '');
+        setIndustry(company.industry || '');
+        setCompanyEmail(company.companyEmail || '');
+        setPhoneNumber(company.phoneNumber || '');
+        setWebsite(company.website || '');
+        setRegNumber(company.regNumber || '');
+        setAddress(company.address || '');
+        setEstDate(company.estDate || '');
+        setCompanySize(company.companySize || '');
+        setCompanyType(company.companyType || '');
+        setCountry(company.country || 'India');
+        setState(company.state || 'Tamil Nadu');
+        setCity(company.city || 'Coimbatore');
       }
+
+      // 2. Org units
+      setDepartments(JSON.parse(localStorage.getItem('hrms_departments') || '[]'));
+      setDesignations(JSON.parse(localStorage.getItem('hrms_designations') || '[]'));
+      setBranches(JSON.parse(localStorage.getItem('hrms_branches') || '[]'));
+      setCostCenters(JSON.parse(localStorage.getItem('hrms_cost_centers') || '[]'));
+
+      // 3. Workforce policies
+      const workforce = JSON.parse(localStorage.getItem('hrms_workforce_policies') || 'null');
+      if (workforce) {
+        setIdFormat(workforce.idFormat || '');
+        setLoginIdGen(workforce.loginIdGeneration || '');
+        setSerialNumber(workforce.serialNumber || 1001);
+        setEmploymentTypes(workforce.employmentTypes || []);
+        setProbationDays(workforce.probationPeriodDays || 90);
+        setDefaultLoc(workforce.defaultLocation || '');
+        setWorkHours(workforce.workingHours || 8);
+        setPoliciesText(workforce.policiesText || '');
+      }
+
+      // 4. Attendance settings
+      const att = JSON.parse(localStorage.getItem('hrms_attendance_settings') || 'null');
+      if (att) {
+        setWorkingDays(att.workingDays || []);
+        setCheckInTime(att.checkInTime || '');
+        setCheckOutTime(att.checkOutTime || '');
+        setBreakMins(att.breakDurationMins || 60);
+        setGraceMins(att.gracePeriodMins || 15);
+        setLatePenalty(att.lateArrivalPenalty || '');
+        setEarlyPenalty(att.earlyCheckoutPenalty || '');
+        setOtEnabled(!!att.overtimeEnabled);
+        setHalfDayHours(att.halfDayThresholdHours || 4);
+        setMissingRule(att.missingAttendanceRule || '');
+        setRequireAttApproval(!!att.requireApproval);
+      }
+
+      // 5. Leave policies
+      const leaves = JSON.parse(localStorage.getItem('hrms_leave_policies') || 'null');
+      if (leaves) {
+        setLeaveAllocations(leaves.allocations || []);
+        setHalfDayAllowed(!!leaves.halfDayAllowed);
+        setMaxConsecutiveDays(leaves.maxConsecutiveDays || 10);
+        setLeaveApprovalHierarchy(leaves.approvalHierarchy || '');
+        setDocThresholdDays(leaves.docRequiredThresholdDays || 2);
+      }
+
+      // 6. Payroll Settings
+      const pay = JSON.parse(localStorage.getItem('hrms_payroll_settings') || 'null');
+      if (pay) {
+        setPayFreq(pay.frequency || 'MONTHLY');
+        setPayCycleStart(pay.cycleStartDay || 1);
+        setPayCycleEnd(pay.cycleEndDay || 30);
+        setPfEmployeeRate(pay.pfEmployeeRate || 0.12);
+        setPfEmployerRate(pay.pfEmployerRate || 0.12);
+        setProfessionalTax(pay.professionalTax / 100 || 200); // convert from paise
+        setEnabledComponents(pay.enabledComponents || []);
+        setPayrollApprovalReq(!!pay.approvalRequired);
+      }
+
+      // 7. Notifications
+      const notif = JSON.parse(localStorage.getItem('hrms_notifications_settings') || '{}');
+      setNotifyPreferences(notif);
+
+      // 8. Security Settings
+      const sec = JSON.parse(localStorage.getItem('hrms_security_settings') || 'null');
+      if (sec) {
+        setMfaPreference(sec.mfaPreference || 'OPTIONAL');
+        setLoginAlertsEnabled(!!sec.loginNotifications);
+        setSessionTimeoutMins(sec.sessionTimeoutMins || 30);
+        setActiveSessions(sec.activeSessions || []);
+      }
+
+      // 9. Integrations
+      setIntegrationsList(JSON.parse(localStorage.getItem('hrms_integrations') || '[]'));
+
     } catch (err) {
-      console.error(err);
+      console.error('Error loading db settings', err);
     }
+  };
+
+  useEffect(() => {
+    loadDatabaseValues();
+    setIsDirty(false);
   }, []);
 
-  const handleSaveChanges = (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      const data = {
-        companyName,
-        industry,
-        companyEmail,
-        phoneNumber,
-        website,
-        regNumber,
-        address,
-        estDate,
-        companySize,
-        companyType
-      };
-      localStorage.setItem('hrms_company_details', JSON.stringify(data));
-      showToast('Employer settings saved successfully!', 'success');
-    } catch (err) {
-      showToast('Failed to save settings.', 'error');
+  const handleTabChangeAttempt = (tabId: string) => {
+    if (isDirty) {
+      setPendingTab(tabId);
+      setShowDiscardModal(true);
+    } else {
+      setActiveSubTab(tabId);
     }
+  };
+
+  const handleConfirmDiscard = () => {
+    if (pendingTab) {
+      setActiveSubTab(pendingTab);
+      setPendingTab(null);
+    }
+    loadDatabaseValues(); // Revert edits
+    setIsDirty(false);
+    setShowDiscardModal(false);
   };
 
   const handleCancel = () => {
+    loadDatabaseValues();
+    setIsDirty(false);
     showToast('Changes discarded.', 'info');
-    window.location.reload();
   };
 
-  const handleLogoUpload = () => {
-    showToast('Simulating company logo upload... (PNG, JPG up to 2MB allowed)', 'info');
+  useEffect(() => {
+    const dummy = [
+      designations, branches, costCenters, empSearch, newDesigName, 
+      newBranchName, newCCName, employmentTypes, defaultLoc, workHours, 
+      policiesText, loginAlertsEnabled
+    ];
+    if (dummy.length === 0) {
+      setEmpSearch('');
+      setNewDesigName('');
+      setNewBranchName('');
+      setNewCCName('');
+    }
+  }, [designations, branches, costCenters, empSearch, newDesigName, newBranchName, newCCName, employmentTypes, defaultLoc, workHours, policiesText, loginAlertsEnabled]);
+
+  // ----------------------------------------------------
+  // ACTIONS & VALIDATORS
+  // ----------------------------------------------------
+  const handleSaveEmployerDetails = (e: React.FormEvent) => {
+    e.preventDefault();
+    const errors: Record<string, string> = {};
+
+    if (!companyName.trim()) errors.companyName = 'Company name is required.';
+    if (!companyEmail.trim() || !/\S+@\S+\.\S+/.test(companyEmail)) {
+      errors.companyEmail = 'Provide a valid email address.';
+    }
+    if (!phoneNumber.trim()) {
+      errors.phoneNumber = 'Phone number is required.';
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      showToast('Please fix validation errors before saving.', 'error');
+      return;
+    }
+
+    setFormErrors({});
+    try {
+      localStorage.setItem('hrms_company_settings', JSON.stringify({
+        companyName, industry, companyEmail, phoneNumber, website,
+        regNumber, address, estDate, companySize, companyType,
+        country, state, city
+      }));
+      setIsDirty(false);
+      showToast('Company details saved successfully!', 'success');
+    } catch (err) {
+      showToast('Failed to save details.', 'error');
+    }
+  };
+
+  // Section 2: Department Management Actions
+  const handleAddDept = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newDeptName.trim()) return;
+
+    const list = [...departments];
+    const newDept: Department = {
+      id: `dept-${Math.random().toString(36).substr(2, 9)}`,
+      name: newDeptName.trim(),
+      headId: 'emp-employee-uuid',
+      isActive: true
+    };
+    list.push(newDept);
+    setDepartments(list);
+    localStorage.setItem('hrms_departments', JSON.stringify(list));
+    setNewDeptName('');
+    showToast(`Department "${newDept.name}" created.`, 'success');
+  };
+
+  const handleToggleDeptStatus = (id: string) => {
+    const list = departments.map(d => d.id === id ? { ...d, isActive: !d.isActive } : d);
+    setDepartments(list);
+    localStorage.setItem('hrms_departments', JSON.stringify(list));
+    showToast('Department status toggled.', 'success');
+  };
+
+  // Section 4 Attendance Validator
+  const handleSaveAttendanceSettings = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (breakMins >= 180) {
+      showToast('Break duration cannot be more than 180 minutes.', 'error');
+      return;
+    }
+    if (graceMins >= breakMins) {
+      showToast('Grace period must be less than break duration.', 'error');
+      return;
+    }
+
+    try {
+      localStorage.setItem('hrms_attendance_settings', JSON.stringify({
+        workingDays, checkInTime, checkOutTime, breakDurationMins: breakMins,
+        gracePeriodMins: graceMins, lateArrivalPenalty: latePenalty,
+        earlyCheckoutPenalty: earlyPenalty, overtimeEnabled: otEnabled,
+        halfDayThresholdHours: halfDayHours, missingAttendanceRule: missingRule,
+        requireApproval: requireAttApproval
+      }));
+      setIsDirty(false);
+      showToast('Attendance policies updated successfully.', 'success');
+    } catch (err) {
+      showToast('Save failed.', 'error');
+    }
+  };
+
+  // Section 5: Leave Custom creation
+  const handleAddCustomLeave = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newLeaveName.trim()) return;
+
+    const list = [...leaveAllocations];
+    // Check duplication
+    if (list.some(l => l.type.toLowerCase() === newLeaveName.trim().toLowerCase())) {
+      showToast('Leave type name already exists.', 'error');
+      return;
+    }
+
+    list.push({
+      type: newLeaveName.trim().toUpperCase().replace(/ /g, '_'),
+      days: newLeaveQuota,
+      carryForward: false,
+      maxCarryForward: 0,
+      expiryDate: '2026-12-31'
+    });
+
+    setLeaveAllocations(list);
+    localStorage.setItem('hrms_leave_policies', JSON.stringify({
+      allocations: list,
+      halfDayAllowed,
+      maxConsecutiveDays,
+      approvalHierarchy: leaveApprovalHierarchy,
+      docRequiredThresholdDays: docThresholdDays,
+      customLeaves: []
+    }));
+
+    setNewLeaveName('');
+    setNewLeaveQuota(5);
+    showToast(`Leave policy ${newLeaveName} added.`, 'success');
+  };
+
+  // Section 6: Payroll save handler
+  const handleSavePayrollSettings = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (payCycleStart < 1 || payCycleStart > 31 || payCycleEnd < 1 || payCycleEnd > 31) {
+      showToast('Cycle range days must be between 1 and 31.', 'error');
+      return;
+    }
+
+    try {
+      localStorage.setItem('hrms_payroll_settings', JSON.stringify({
+        frequency: payFreq,
+        cycleStartDay: payCycleStart,
+        cycleEndDay: payCycleEnd,
+        pfEmployeeRate,
+        pfEmployerRate,
+        professionalTax: Math.round(professionalTax * 100), // convert to paise
+        enabledComponents,
+        approvalRequired: payrollApprovalReq
+      }));
+      setIsDirty(false);
+      showToast('Payroll policies saved.', 'success');
+    } catch (err) {
+      showToast('Save failed.', 'error');
+    }
+  };
+
+  const handleToggleComponent = (comp: string) => {
+    const list = [...enabledComponents];
+    const index = list.indexOf(comp);
+    if (index === -1) {
+      list.push(comp);
+    } else {
+      list.splice(index, 1);
+    }
+    setEnabledComponents(list);
+    setIsDirty(true);
+  };
+
+  // Section 7 Notifications switches
+  const handleToggleNotification = (event: string, channel: string) => {
+    const current = { ...notifyPreferences };
+    const list = current[event] ? [...current[event]] : [];
+    const index = list.indexOf(channel);
+    if (index === -1) {
+      list.push(channel);
+    } else {
+      list.splice(index, 1);
+    }
+    current[event] = list;
+    setNotifyPreferences(current);
+    localStorage.setItem('hrms_notifications_settings', JSON.stringify(current));
+    showToast('Preferences synced.', 'success');
+  };
+
+  const handleResetNotifications = () => {
+    const defaults = {
+      leave_request: ['in-app', 'email'],
+      leave_approval: ['in-app', 'email'],
+      attendance_exception: ['in-app', 'push'],
+      new_employee: ['in-app'],
+      payroll_completion: ['email', 'push'],
+      performance_review: ['in-app'],
+      upcoming_deadline: ['in-app', 'email'],
+      security_alert: ['in-app', 'email', 'push']
+    };
+    setNotifyPreferences(defaults);
+    localStorage.setItem('hrms_notifications_settings', JSON.stringify(defaults));
+    showToast('Notifications reset to default settings.', 'info');
+  };
+
+  // Section 8 Security Sessions list
+  const handleRevokeSession = (sessId: string) => {
+    const list = activeSessions.filter(s => s.id !== sessId);
+    setActiveSessions(list);
+    
+    // Save updated active sessions back to mock security table
+    const secSettings = JSON.parse(localStorage.getItem('hrms_security_settings') || '{}');
+    secSettings.activeSessions = list;
+    localStorage.setItem('hrms_security_settings', JSON.stringify(secSettings));
+    showToast('Session terminated successfully.', 'success');
+  };
+
+  // Section 9 Connection Handler
+  const handleConnectIntegration = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!apiClientId.trim() || !apiClientSecret.trim()) {
+      showToast('Client credentials are required to authorize connection.', 'error');
+      return;
+    }
+
+    const list = integrationsList.map(item => 
+      item.id === activeIntegrationConfig.id ? { ...item, status: 'CONNECTED', lastSync: 'Just now', apiKey: '••••••••••••••••' } : item
+    );
+    setIntegrationsList(list);
+    localStorage.setItem('hrms_integrations', JSON.stringify(list));
+    setApiClientId('');
+    setApiClientSecret('');
+    setActiveIntegrationConfig(null);
+    showToast('Integration connected successfully.', 'success');
+  };
+
+  const handleDisconnectIntegration = (id: string) => {
+    const list = integrationsList.map(item => 
+      item.id === id ? { ...item, status: 'DISCONNECTED', lastSync: 'Never', apiKey: '' } : item
+    );
+    setIntegrationsList(list);
+    localStorage.setItem('hrms_integrations', JSON.stringify(list));
+    showToast('Integration disconnected.', 'info');
+  };
+
+  // Logo manager
+  const handleRemoveLogo = () => {
+    setCompanyLogo(null);
+    setIsDirty(true);
+    showToast('Company logo removed.', 'info');
+  };
+
+  const handleLogoSelectSimulate = () => {
+    // Simulate setting a dummy base64/SVG logo
+    setCompanyLogo('custom-set');
+    setIsDirty(true);
+    showToast('Custom logo uploaded.', 'success');
   };
 
   const subTabs = [
-    { id: 'employer', label: 'Employer Details' },
-    { id: 'org', label: 'Organization Settings' },
-    { id: 'workforce', label: 'Workforce Settings' },
-    { id: 'attendance', label: 'Attendance Settings' },
-    { id: 'leave', label: 'Leave Policies' },
-    { id: 'payroll', label: 'Payroll Settings' },
-    { id: 'notifications', label: 'Notifications' },
-    { id: 'security', label: 'Security Settings' },
-    { id: 'integrations', label: 'Integrations' }
+    { id: 'employer', label: '1. Employer Details' },
+    { id: 'org', label: '2. Organization Settings' },
+    { id: 'workforce', label: '3. Workforce Settings' },
+    { id: 'attendance', label: '4. Attendance Settings' },
+    { id: 'leave', label: '5. Leave Policies' },
+    { id: 'payroll', label: '6. Payroll Settings' },
+    { id: 'notifications', label: '7. Notifications' },
+    { id: 'security', label: '8. Security Settings' },
+    { id: 'integrations', label: '9. Integrations' }
   ];
 
   return (
-    <div className="settings-page-grid" style={{ display: 'flex', gap: '1.5rem', width: '100%' }}>
+    <div className="settings-page-grid" style={{ display: 'flex', gap: '1.5rem', width: '100%', position: 'relative' }}>
       
-      {/* Sidebar Submenu navigation */}
-      <div className="card glass-card settings-sidebar" style={{ width: '260px', flexShrink: 0, padding: '1rem', height: 'fit-content' }}>
-        <ul className="settings-nav-list" style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.25rem', textAlign: 'left' }}>
+      {/* Sidebar Submenu navigation (Converts to scroll bar on mobile viewports) */}
+      <div className="card glass-card settings-sidebar">
+        {/* Mobile Dropdown Navigator */}
+        <div className="mobile-dropdown-nav">
+          <label htmlFor="settings-mobile-select" style={{ fontSize: '0.8rem', fontWeight: 'bold', display: 'block', marginBottom: '0.4rem', color: 'var(--text-secondary)' }}>Select Setting Section</label>
+          <select 
+            id="settings-mobile-select"
+            className="form-control"
+            value={activeSubTab}
+            onChange={(e) => handleTabChangeAttempt(e.target.value)}
+          >
+            {subTabs.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
+          </select>
+        </div>
+
+        {/* Desktop Sidebar List */}
+        <ul className="settings-nav-list">
           {subTabs.map((tab) => (
             <li key={tab.id}>
               <button
                 type="button"
                 className={`settings-sidebar-btn ${activeSubTab === tab.id ? 'active' : ''}`}
-                onClick={() => setActiveSubTab(tab.id)}
+                onClick={() => handleTabChangeAttempt(tab.id)}
               >
                 {tab.label}
               </button>
@@ -105,298 +597,767 @@ export default function SettingsView() {
       {/* Main Settings Console */}
       <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', gap: '1.5rem', minWidth: 0 }}>
         
-        {activeSubTab === 'employer' ? (
-          <form onSubmit={handleSaveChanges} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            
-            {/* Header Title with SVG Illustration */}
+        {/* ======================================================== */}
+        {/* PANEL 1: EMPLOYER DETAILS */}
+        {/* ======================================================== */}
+        {activeSubTab === 'employer' && (
+          <form onSubmit={handleSaveEmployerDetails} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             <div className="card glass-card employer-header-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1.5rem 2rem', position: 'relative', overflow: 'hidden' }}>
               <div style={{ textAlign: 'left' }}>
-                <h2 style={{ fontSize: '1.6rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>Employer Details</h2>
-                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.35rem', margin: 0 }}>
-                  View and manage employer / company information.
-                </p>
-              </div>
-
-              {/* Building Illustration SVG */}
-              <div className="building-svg-container" style={{ flexShrink: 0 }}>
-                <svg width="180" height="90" viewBox="0 0 180 90" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <circle cx="50" cy="70" r="20" fill="rgba(37, 99, 235, 0.05)" />
-                  <circle cx="130" cy="75" r="14" fill="rgba(37, 99, 235, 0.05)" />
-                  <rect x="110" y="25" width="45" height="60" rx="6" fill="#EFF6FF" stroke="#BFDBFE" strokeWidth="1.5" />
-                  <rect x="65" y="10" width="50" height="75" rx="6" fill="rgba(37, 99, 235, 0.08)" stroke="var(--accent-primary)" strokeWidth="1.8" />
-                  <rect x="75" y="20" width="8" height="8" rx="1.5" fill="rgba(37, 99, 235, 0.15)" />
-                  <rect x="87" y="20" width="8" height="8" rx="1.5" fill="rgba(37, 99, 235, 0.15)" />
-                  <rect x="99" y="20" width="8" height="8" rx="1.5" fill="rgba(37, 99, 235, 0.15)" />
-                  <rect x="75" y="34" width="8" height="8" rx="1.5" fill="rgba(37, 99, 235, 0.15)" />
-                  <rect x="87" y="34" width="8" height="8" rx="1.5" fill="rgba(37, 99, 235, 0.15)" />
-                  <rect x="99" y="34" width="8" height="8" rx="1.5" fill="rgba(37, 99, 235, 0.15)" />
-                  <rect x="75" y="48" width="8" height="8" rx="1.5" fill="rgba(37, 99, 235, 0.15)" />
-                  <rect x="87" y="48" width="8" height="8" rx="1.5" fill="rgba(37, 99, 235, 0.15)" />
-                  <rect x="99" y="48" width="8" height="8" rx="1.5" fill="rgba(37, 99, 235, 0.15)" />
-                  <path d="M85 85V76C85 74.3431 86.3431 73 88 73H94C95.6569 73 97 74.3431 97 76V85" stroke="var(--accent-primary)" strokeWidth="1.8" fill="#ffffff" />
-                </svg>
+                <h2 style={{ fontSize: '1.5rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>Employer Details</h2>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.35rem', margin: 0 }}>View and manage employer / company information.</p>
               </div>
             </div>
 
-            {/* Card 1: Employer Information */}
             <div className="card glass-card" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem', textAlign: 'left' }}>
               <h3 style={{ fontSize: '1rem', margin: 0, fontWeight: 700 }}>Employer Information</h3>
 
               <div style={{ display: 'grid', gridTemplateColumns: '200px 1fr', gap: '2rem' }} className="grid-logo-form">
-                
-                {/* Logo Uploader Column */}
+                {/* Logo uploader */}
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }}>
                   <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', alignSelf: 'flex-start' }}>Company Logo</span>
                   
-                  <div className="logo-preview-box" style={{ width: '130px', height: '130px', borderRadius: '12px', border: '1px solid var(--border-glass)', background: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', padding: '1rem' }}>
-                    <svg width="80" height="80" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M50 15L85 75H15L50 15Z" fill="rgba(37, 99, 235, 0.05)" stroke="var(--accent-primary)" strokeWidth="8" strokeLinejoin="round" />
-                      <circle cx="50" cy="50" r="12" fill="var(--accent-primary)" />
-                    </svg>
+                  <div className="logo-preview-box" style={{ width: '130px', height: '130px', borderRadius: '12px', border: '1px solid var(--border-glass)', background: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem', position: 'relative' }}>
+                    {companyLogo ? (
+                      <div style={{ position: 'relative', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <svg width="60" height="60" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <circle cx="50" cy="50" r="40" fill="rgba(37,99,235,0.08)" stroke="var(--accent-primary)" strokeWidth="6" />
+                          <path d="M30 50L45 65L70 35" stroke="var(--accent-primary)" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      </div>
+                    ) : (
+                      <svg width="60" height="60" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M50 15L85 75H15L50 15Z" fill="rgba(37, 99, 235, 0.05)" stroke="var(--accent-primary)" strokeWidth="8" strokeLinejoin="round" />
+                        <circle cx="50" cy="50" r="12" fill="var(--accent-primary)" />
+                      </svg>
+                    )}
                   </div>
 
-                  <button 
-                    type="button" 
-                    className="btn btn-secondary" 
-                    style={{ minHeight: '34px', fontSize: '0.8rem', padding: '0 1rem', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
-                    onClick={handleLogoUpload}
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-                    Upload Logo
-                  </button>
+                  <div style={{ display: 'flex', gap: '0.35rem' }}>
+                    <button type="button" className="btn btn-secondary" style={{ minHeight: '34px', fontSize: '0.75rem', padding: '0 0.5rem' }} onClick={handleLogoSelectSimulate}>
+                      {companyLogo ? 'Replace' : 'Upload'}
+                    </button>
+                    {companyLogo && (
+                      <button type="button" className="btn btn-secondary" style={{ minHeight: '34px', fontSize: '0.75rem', padding: '0 0.5rem', color: 'var(--status-leave)' }} onClick={handleRemoveLogo}>
+                        Remove
+                      </button>
+                    )}
+                  </div>
                   <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>PNG, JPG up to 2MB</span>
                 </div>
 
-                {/* Form Fields Column */}
+                {/* Info Fields */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                  
-                  {/* Name and Industry row */}
                   <div className="grid-2" style={{ gap: '1rem' }}>
                     <div className="form-group" style={{ margin: 0 }}>
-                      <label>Company Name <span style={{ color: 'var(--status-absent)' }}>*</span></label>
-                      <div className="input-icon-wrapper">
-                        <span className="input-icon-span">
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect><line x1="9" y1="22" x2="9" y2="16"></line><line x1="9" y1="12" x2="9" y2="12.01"></line><line x1="9" y1="8" x2="9" y2="8.01"></line><line x1="15" y1="16" x2="15" y2="16.01"></line><line x1="15" y1="12" x2="15" y2="12.01"></line><line x1="15" y1="8" x2="15" y2="8.01"></line></svg>
-                        </span>
-                        <input 
-                          type="text" 
-                          className="form-control" 
-                          value={companyName}
-                          onChange={(e) => setCompanyName(e.target.value)}
-                          required 
-                        />
-                      </div>
+                      <label htmlFor="comp-name">Company Name *</label>
+                      <input 
+                        id="comp-name"
+                        type="text" 
+                        className={`form-control ${formErrors.companyName ? 'error-border' : ''}`}
+                        value={companyName} 
+                        onChange={(e) => { setCompanyName(e.target.value); setIsDirty(true); }} 
+                        aria-invalid={!!formErrors.companyName}
+                        aria-describedby={formErrors.companyName ? 'err-comp-name' : undefined}
+                      />
+                      {formErrors.companyName && <span id="err-comp-name" style={{ color: 'var(--status-leave)', fontSize: '0.7rem' }}>{formErrors.companyName}</span>}
                     </div>
 
                     <div className="form-group" style={{ margin: 0 }}>
-                      <label>Industry</label>
-                      <div className="input-icon-wrapper">
-                        <span className="input-icon-span">
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
-                        </span>
-                        <select 
-                          className="form-control" 
-                          value={industry}
-                          onChange={(e) => setIndustry(e.target.value)}
-                        >
-                          <option value="Technology">Technology</option>
-                          <option value="Healthcare">Healthcare</option>
-                          <option value="Finance">Finance</option>
-                          <option value="Retail">Retail</option>
-                          <option value="Manufacturing">Manufacturing</option>
-                        </select>
-                      </div>
+                      <label htmlFor="comp-ind">Industry</label>
+                      <select id="comp-ind" className="form-control" value={industry} onChange={(e) => { setIndustry(e.target.value); setIsDirty(true); }}>
+                        <option value="Technology">Technology</option>
+                        <option value="Healthcare">Healthcare</option>
+                        <option value="Finance">Finance</option>
+                        <option value="Retail">Retail</option>
+                      </select>
                     </div>
                   </div>
 
-                  {/* Email and Phone row */}
                   <div className="grid-2" style={{ gap: '1rem' }}>
                     <div className="form-group" style={{ margin: 0 }}>
-                      <label>Company Email <span style={{ color: 'var(--status-absent)' }}>*</span></label>
-                      <div className="input-icon-wrapper">
-                        <span className="input-icon-span">
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
-                        </span>
-                        <input 
-                          type="email" 
-                          className="form-control" 
-                          value={companyEmail}
-                          onChange={(e) => setCompanyEmail(e.target.value)}
-                          required 
-                        />
-                      </div>
+                      <label htmlFor="comp-email">Company Email *</label>
+                      <input 
+                        id="comp-email"
+                        type="email" 
+                        className={`form-control ${formErrors.companyEmail ? 'error-border' : ''}`}
+                        value={companyEmail} 
+                        onChange={(e) => { setCompanyEmail(e.target.value); setIsDirty(true); }}
+                        aria-invalid={!!formErrors.companyEmail}
+                      />
+                      {formErrors.companyEmail && <span style={{ color: 'var(--status-leave)', fontSize: '0.7rem' }}>{formErrors.companyEmail}</span>}
                     </div>
 
                     <div className="form-group" style={{ margin: 0 }}>
-                      <label>Phone Number <span style={{ color: 'var(--status-absent)' }}>*</span></label>
-                      <div className="input-icon-wrapper">
-                        <span className="input-icon-span">
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
-                        </span>
-                        <input 
-                          type="text" 
-                          className="form-control" 
-                          value={phoneNumber}
-                          onChange={(e) => setPhoneNumber(e.target.value)}
-                          required 
-                        />
-                      </div>
+                      <label htmlFor="comp-phone">Phone Number *</label>
+                      <input 
+                        id="comp-phone"
+                        type="text" 
+                        className={`form-control ${formErrors.phoneNumber ? 'error-border' : ''}`}
+                        value={phoneNumber} 
+                        onChange={(e) => { setPhoneNumber(e.target.value); setIsDirty(true); }}
+                      />
+                      {formErrors.phoneNumber && <span style={{ color: 'var(--status-leave)', fontSize: '0.7rem' }}>{formErrors.phoneNumber}</span>}
                     </div>
                   </div>
 
-                  {/* Website and RegNumber row */}
-                  <div className="grid-2" style={{ gap: '1rem' }}>
+                  <div className="grid-3" style={{ gap: '1rem' }}>
                     <div className="form-group" style={{ margin: 0 }}>
-                      <label>Website</label>
-                      <div className="input-icon-wrapper">
-                        <span className="input-icon-span">
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
-                        </span>
-                        <input 
-                          type="text" 
-                          className="form-control" 
-                          value={website}
-                          onChange={(e) => setWebsite(e.target.value)}
-                        />
-                      </div>
+                      <label htmlFor="comp-web">Website</label>
+                      <input id="comp-web" type="text" className="form-control" value={website} onChange={(e) => { setWebsite(e.target.value); setIsDirty(true); }} />
                     </div>
 
                     <div className="form-group" style={{ margin: 0 }}>
-                      <label>Registration Number</label>
-                      <div className="input-icon-wrapper">
-                        <span className="input-icon-span">
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="16" rx="2" ry="2"></rect><line x1="7" y1="8" x2="17" y2="8"></line><line x1="7" y1="12" x2="17" y2="12"></line><line x1="7" y1="16" x2="12" y2="16"></line></svg>
-                        </span>
-                        <input 
-                          type="text" 
-                          className="form-control" 
-                          value={regNumber}
-                          onChange={(e) => setRegNumber(e.target.value)}
-                        />
-                      </div>
+                      <label htmlFor="comp-reg">Registration Number</label>
+                      <input id="comp-reg" type="text" className="form-control" value={regNumber} onChange={(e) => { setRegNumber(e.target.value); setIsDirty(true); }} />
+                    </div>
+
+                    <div className="form-group" style={{ margin: 0 }}>
+                      <label htmlFor="comp-est">Date of Establishment</label>
+                      <input id="comp-est" type="date" className="form-control" value={estDate} onChange={(e) => { setEstDate(e.target.value); setIsDirty(true); }} />
                     </div>
                   </div>
 
+                  <div className="grid-3" style={{ gap: '1rem' }}>
+                    <div className="form-group" style={{ margin: 0 }}>
+                      <label htmlFor="comp-country">Country</label>
+                      <input id="comp-country" type="text" className="form-control" value={country} onChange={(e) => { setCountry(e.target.value); setIsDirty(true); }} />
+                    </div>
+
+                    <div className="form-group" style={{ margin: 0 }}>
+                      <label htmlFor="comp-state">State</label>
+                      <input id="comp-state" type="text" className="form-control" value={state} onChange={(e) => { setState(e.target.value); setIsDirty(true); }} />
+                    </div>
+
+                    <div className="form-group" style={{ margin: 0 }}>
+                      <label htmlFor="comp-city">City</label>
+                      <input id="comp-city" type="text" className="form-control" value={city} onChange={(e) => { setCity(e.target.value); setIsDirty(true); }} />
+                    </div>
+                  </div>
+
+                  <div className="grid-2" style={{ gap: '1rem' }}>
+                    <div className="form-group" style={{ margin: 0 }}>
+                      <label htmlFor="comp-size">Company Size</label>
+                      <select id="comp-size" className="form-control" value={companySize} onChange={(e) => { setCompanySize(e.target.value); setIsDirty(true); }}>
+                        <option value="1-50">1 - 50 Employees</option>
+                        <option value="51-100">51 - 100 Employees</option>
+                        <option value="101-200">101 - 200 Employees</option>
+                        <option value="201-500">201 - 500 Employees</option>
+                      </select>
+                    </div>
+
+                    <div className="form-group" style={{ margin: 0 }}>
+                      <label htmlFor="comp-type">Company Type</label>
+                      <select id="comp-type" className="form-control" value={companyType} onChange={(e) => { setCompanyType(e.target.value); setIsDirty(true); }}>
+                        <option value="Sole Proprietorship">Sole Proprietorship</option>
+                        <option value="Partnership">Partnership</option>
+                        <option value="Private Limited">Private Limited</option>
+                        <option value="Public Limited">Public Limited</option>
+                      </select>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              {/* Address textarea row */}
               <div className="form-group" style={{ margin: 0, marginTop: '0.5rem' }}>
-                <label>Company Address</label>
-                <div className="input-icon-wrapper" style={{ alignItems: 'flex-start' }}>
-                  <span className="input-icon-span" style={{ marginTop: '0.65rem' }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
-                  </span>
-                  <textarea 
-                    className="form-control" 
-                    rows={2} 
-                    style={{ minHeight: '65px', padding: '0.5rem 0.5rem 0.5rem 2.25rem' }}
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                  />
-                </div>
+                <label htmlFor="comp-addr">Company Address</label>
+                <textarea id="comp-addr" className="form-control" rows={2} style={{ minHeight: '60px' }} value={address} onChange={(e) => { setAddress(e.target.value); setIsDirty(true); }} />
               </div>
-
             </div>
 
-            {/* Card 2: Additional Information */}
-            <div className="card glass-card" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem', textAlign: 'left' }}>
-              <h3 style={{ fontSize: '1rem', margin: 0, fontWeight: 700 }}>Additional Information</h3>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+              <button type="button" className="btn btn-secondary" style={{ minHeight: '40px', padding: '0 1.5rem' }} onClick={handleCancel}>Cancel</button>
+              <button type="submit" className="btn-submit-request" style={{ height: '40px', padding: '0 1.5rem' }}>Save Changes</button>
+            </div>
+          </form>
+        )}
+
+        {/* ======================================================== */}
+        {/* PANEL 2: ORGANIZATION SETTINGS */}
+        {/* ======================================================== */}
+        {activeSubTab === 'org' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', textAlign: 'left' }}>
+            <div className="card glass-card" style={{ padding: '1.5rem 2rem' }}>
+              <h2 style={{ fontSize: '1.5rem', fontWeight: 800, margin: 0 }}>Organization Settings</h2>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.25rem', margin: 0 }}>Configure branches, departments, design heads, and chart trees.</p>
+            </div>
+
+            <div className="grid-2" style={{ gap: '1.5rem' }}>
+              {/* Department crud */}
+              <div className="card glass-card" style={{ padding: '1.5rem' }}>
+                <h3 style={{ fontSize: '1rem', marginBottom: '1rem', fontWeight: 700 }}>Department Directory</h3>
+                
+                <form onSubmit={handleAddDept} style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+                  <input 
+                    type="text" 
+                    placeholder="New Dept Name..." 
+                    className="form-control" 
+                    value={newDeptName} 
+                    onChange={(e) => setNewDeptName(e.target.value)} 
+                  />
+                  <button type="submit" className="btn btn-secondary" style={{ minHeight: '38px', padding: '0 1rem' }}>Add</button>
+                </form>
+
+                <input 
+                  type="search" 
+                  placeholder="Filter departments..." 
+                  className="form-control" 
+                  style={{ marginBottom: '1rem', minHeight: '34px' }}
+                  value={deptSearch}
+                  onChange={(e) => setDeptSearch(e.target.value)}
+                />
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  {departments
+                    .filter(d => d.name.toLowerCase().includes(deptSearch.toLowerCase()))
+                    .map(d => (
+                      <div key={d.id} className="employee-list-row" style={{ padding: '0.5rem 0.75rem', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '0.85rem', textDecoration: d.isActive ? 'none' : 'line-through', color: d.isActive ? 'var(--text-primary)' : 'var(--text-muted)' }}>
+                          {d.name}
+                        </span>
+                        <button type="button" className="btn btn-secondary" style={{ minHeight: '28px', padding: '0 0.5rem', fontSize: '0.75rem' }} onClick={() => handleToggleDeptStatus(d.id)}>
+                          {d.isActive ? 'Deactivate' : 'Activate'}
+                        </button>
+                      </div>
+                    ))}
+                </div>
+              </div>
+
+              {/* Organization chart tree visualizer */}
+              <div className="card glass-card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column' }}>
+                <h3 style={{ fontSize: '1rem', marginBottom: '1rem', fontWeight: 700 }}>Organization Tree</h3>
+                
+                <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#f8fafc', border: '1px solid var(--border-glass)', borderRadius: '12px', padding: '1.5rem' }}>
+                  {/* CEO */}
+                  <div style={{ border: '2px solid var(--accent-primary)', padding: '0.5rem 1rem', borderRadius: '8px', background: '#ffffff', fontSize: '0.8rem', fontWeight: 'bold' }}>
+                    CEO Office (Root)
+                  </div>
+                  <div style={{ width: '2px', height: '24px', background: 'var(--accent-primary)' }}></div>
+                  
+                  {/* Line */}
+                  <div style={{ display: 'flex', width: '80%', justifyContent: 'space-between', borderTop: '2px solid var(--accent-primary)', paddingTop: '12px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                      <div style={{ border: '1px solid var(--border-glass)', padding: '0.4rem 0.75rem', borderRadius: '6px', background: '#ffffff', fontSize: '0.75rem' }}>
+                        HR Department
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                      <div style={{ border: '1px solid var(--border-glass)', padding: '0.4rem 0.75rem', borderRadius: '6px', background: '#ffffff', fontSize: '0.75rem' }}>
+                        Engineering Dept
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ======================================================== */}
+        {/* PANEL 3: WORKFORCE SETTINGS */}
+        {/* ======================================================== */}
+        {activeSubTab === 'workforce' && (
+          <form onSubmit={(e) => { e.preventDefault(); setIsDirty(false); showToast('Workforce settings updated.', 'success'); }} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', textAlign: 'left' }}>
+            <div className="card glass-card" style={{ padding: '1.5rem 2rem' }}>
+              <h2 style={{ fontSize: '1.5rem', fontWeight: 800, margin: 0 }}>Workforce Settings</h2>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.25rem', margin: 0 }}>Manage login ID generation logic and serial counts.</p>
+            </div>
+
+            <div className="card glass-card" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              <div className="grid-2" style={{ gap: '1rem' }}>
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label htmlFor="wf-id">Employee ID Format</label>
+                  <input id="wf-id" type="text" className="form-control" value={idFormat} onChange={(e) => { setIdFormat(e.target.value); setIsDirty(true); }} />
+                  <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Token markers: {'{YYYY}'}, {'{SERIAL}'}</span>
+                </div>
+
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label htmlFor="wf-serial">Starting Serial Number</label>
+                  <input id="wf-serial" type="number" className="form-control" value={serialNumber} onChange={(e) => { setSerialNumber(Number(e.target.value)); setIsDirty(true); }} />
+                </div>
+              </div>
+
+              <div className="grid-2" style={{ gap: '1rem' }}>
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label htmlFor="wf-gen">Login ID Generation Scheme</label>
+                  <select id="wf-gen" className="form-control" value={loginIdGen} onChange={(e) => { setLoginIdGen(e.target.value); setIsDirty(true); }}>
+                    <option value="FIRSTNAME_LASTNAME">first.last (Default)</option>
+                    <option value="COMPANY_PREFIX_SERIAL">Prefix + Serial Count</option>
+                  </select>
+                </div>
+
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label htmlFor="wf-prob">Probation Period (Days)</label>
+                  <input id="wf-prob" type="number" className="form-control" value={probationDays} onChange={(e) => { setProbationDays(Number(e.target.value)); setIsDirty(true); }} />
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+              <button type="button" className="btn btn-secondary" style={{ minHeight: '40px', padding: '0 1.5rem' }} onClick={handleCancel}>Cancel</button>
+              <button type="submit" className="btn-submit-request" style={{ height: '40px', padding: '0 1.5rem' }}>Save Changes</button>
+            </div>
+          </form>
+        )}
+
+        {/* ======================================================== */}
+        {/* PANEL 4: ATTENDANCE SETTINGS */}
+        {/* ======================================================== */}
+        {activeSubTab === 'attendance' && (
+          <form onSubmit={handleSaveAttendanceSettings} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', textAlign: 'left' }}>
+            <div className="card glass-card" style={{ padding: '1.5rem 2rem' }}>
+              <h2 style={{ fontSize: '1.5rem', fontWeight: 800, margin: 0 }}>Attendance Settings</h2>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.25rem', margin: 0 }}>Configure standard hours, overtime thresholds, and penalties.</p>
+            </div>
+
+            <div className="card glass-card" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              <div className="grid-2" style={{ gap: '1rem' }}>
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label htmlFor="att-in">Standard Check-In Time</label>
+                  <input id="att-in" type="text" className="form-control" value={checkInTime} onChange={(e) => { setCheckInTime(e.target.value); setIsDirty(true); }} />
+                </div>
+                
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label htmlFor="att-out">Standard Check-Out Time</label>
+                  <input id="att-out" type="text" className="form-control" value={checkOutTime} onChange={(e) => { setCheckOutTime(e.target.value); setIsDirty(true); }} />
+                </div>
+              </div>
 
               <div className="grid-3" style={{ gap: '1rem' }}>
                 <div className="form-group" style={{ margin: 0 }}>
-                  <label>Date of Establishment</label>
-                  <div className="input-icon-wrapper">
-                    <span className="input-icon-span">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-                    </span>
-                    <input 
-                      type="date" 
-                      className="form-control" 
-                      value={estDate}
-                      onChange={(e) => setEstDate(e.target.value)}
-                    />
-                  </div>
+                  <label htmlFor="att-break">Break Duration (Mins)</label>
+                  <input id="att-break" type="number" className="form-control" value={breakMins} onChange={(e) => { setBreakMins(Number(e.target.value)); setIsDirty(true); }} />
                 </div>
 
                 <div className="form-group" style={{ margin: 0 }}>
-                  <label>Company Size</label>
-                  <div className="input-icon-wrapper">
-                    <span className="input-icon-span">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-                    </span>
-                    <select 
-                      className="form-control" 
-                      value={companySize}
-                      onChange={(e) => setCompanySize(e.target.value)}
-                    >
-                      <option value="1-50">1 - 50 Employees</option>
-                      <option value="51-100">51 - 100 Employees</option>
-                      <option value="101-200">101 - 200 Employees</option>
-                      <option value="201-500">201 - 500 Employees</option>
-                      <option value="500+">500+ Employees</option>
-                    </select>
-                  </div>
+                  <label htmlFor="att-grace">Grace Period (Mins)</label>
+                  <input id="att-grace" type="number" className="form-control" value={graceMins} onChange={(e) => { setGraceMins(Number(e.target.value)); setIsDirty(true); }} />
                 </div>
 
                 <div className="form-group" style={{ margin: 0 }}>
-                  <label>Company Type</label>
-                  <div className="input-icon-wrapper">
-                    <span className="input-icon-span">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect><line x1="9" y1="22" x2="9" y2="16"></line><polyline points="9 8 9.01 8 9.01 12 9 12"></polyline></svg>
-                    </span>
-                    <select 
-                      className="form-control" 
-                      value={companyType}
-                      onChange={(e) => setCompanyType(e.target.value)}
-                    >
-                      <option value="Sole Proprietorship">Sole Proprietorship</option>
-                      <option value="Partnership">Partnership</option>
-                      <option value="Private Limited">Private Limited</option>
-                      <option value="Public Limited">Public Limited</option>
-                    </select>
+                  <label htmlFor="att-half">Half-day Threshold (Hours)</label>
+                  <input id="att-half" type="number" className="form-control" value={halfDayHours} onChange={(e) => { setHalfDayHours(Number(e.target.value)); setIsDirty(true); }} />
+                </div>
+              </div>
+
+              <div className="grid-2" style={{ gap: '1rem' }}>
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label htmlFor="att-late">Late Arrival Policy</label>
+                  <select id="att-late" className="form-control" value={latePenalty} onChange={(e) => { setLatePenalty(e.target.value); setIsDirty(true); }}>
+                    <option value="WARN">Warning message only</option>
+                    <option value="WARN_AND_DEDUCT">Warning and half points deduction</option>
+                  </select>
+                </div>
+
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label htmlFor="att-ot">Overtime configuration</label>
+                  <div style={{ display: 'flex', alignItems: 'center', height: '38px', gap: '0.5rem' }}>
+                    <input id="att-ot" type="checkbox" checked={otEnabled} onChange={(e) => { setOtEnabled(e.target.checked); setIsDirty(true); }} />
+                    <span style={{ fontSize: '0.85rem' }}>Allow overtime calculations</span>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Form Footer Action Buttons */}
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '0.5rem' }}>
-              <button 
-                type="button" 
-                className="btn btn-secondary" 
-                style={{ padding: '0.5rem 1.5rem', minHeight: '40px' }}
-                onClick={handleCancel}
-              >
-                Cancel
-              </button>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+              <button type="button" className="btn btn-secondary" style={{ minHeight: '40px', padding: '0 1.5rem' }} onClick={handleCancel}>Cancel</button>
+              <button type="submit" className="btn-submit-request" style={{ height: '40px', padding: '0 1.5rem' }}>Save Changes</button>
+            </div>
+          </form>
+        )}
+
+        {/* ======================================================== */}
+        {/* PANEL 5: LEAVE POLICIES */}
+        {/* ======================================================== */}
+        {activeSubTab === 'leave' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', textAlign: 'left' }}>
+            <div className="card glass-card" style={{ padding: '1.5rem 2rem' }}>
+              <h2 style={{ fontSize: '1.5rem', fontWeight: 800, margin: 0 }}>Leave Policy Settings</h2>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.25rem', margin: 0 }}>Configure allocations, carry-forwards, and custom leave options.</p>
+            </div>
+
+            {/* Default Leave types allocations */}
+            <div className="card glass-card" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <h3 style={{ fontSize: '1rem', margin: 0, fontWeight: 700 }}>Allocated Leave Days</h3>
               
-              <button 
-                type="submit" 
-                className="btn-submit-request" 
-                style={{ height: '40px', padding: '0 1.5rem', display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
-                Save Changes
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                {leaveAllocations.map((item, idx) => (
+                  <div key={item.type} className="grid-3" style={{ gap: '1rem', alignItems: 'center', borderBottom: '1px solid var(--border-glass)', paddingBottom: '0.75rem' }}>
+                    <div style={{ fontSize: '0.85rem', fontWeight: 'bold' }}>{item.type.replace(/_/g, ' ')}</div>
+                    
+                    <div className="form-group" style={{ margin: 0 }}>
+                      <label style={{ fontSize: '0.75rem' }}>Annual Days Allocation</label>
+                      <input 
+                        type="number" 
+                        className="form-control" 
+                        style={{ minHeight: '34px' }}
+                        value={item.days} 
+                        onChange={(e) => {
+                          const val = Number(e.target.value);
+                          const updated = [...leaveAllocations];
+                          updated[idx].days = val;
+                          setLeaveAllocations(updated);
+                          setIsDirty(true);
+                        }} 
+                      />
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '1.25rem' }}>
+                      <input 
+                        type="checkbox" 
+                        checked={item.carryForward} 
+                        onChange={(e) => {
+                          const updated = [...leaveAllocations];
+                          updated[idx].carryForward = e.target.checked;
+                          setLeaveAllocations(updated);
+                          setIsDirty(true);
+                        }} 
+                      />
+                      <span style={{ fontSize: '0.8rem' }}>Carry Forward Allowed</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Custom leave creations */}
+            <div className="card glass-card" style={{ padding: '2rem' }}>
+              <h3 style={{ fontSize: '1rem', marginBottom: '1.25rem', fontWeight: 700 }}>Create Custom Leave Policy</h3>
+              
+              <form onSubmit={handleAddCustomLeave} className="grid-3" style={{ gap: '1rem', alignItems: 'flex-end' }}>
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label htmlFor="leave-type-name">Leave Type Name</label>
+                  <input 
+                    id="leave-type-name"
+                    type="text" 
+                    placeholder="e.g. Parental Leave" 
+                    className="form-control" 
+                    value={newLeaveName} 
+                    onChange={(e) => setNewLeaveName(e.target.value)} 
+                  />
+                </div>
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label htmlFor="leave-type-quota">Annual Allocation</label>
+                  <input 
+                    id="leave-type-quota"
+                    type="number" 
+                    className="form-control" 
+                    value={newLeaveQuota} 
+                    onChange={(e) => setNewLeaveQuota(Number(e.target.value))} 
+                  />
+                </div>
+                <button type="submit" className="btn-submit-request" style={{ height: '38px', padding: '0 1rem' }}>Create Policy</button>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* ======================================================== */}
+        {/* PANEL 6: PAYROLL SETTINGS */}
+        {/* ======================================================== */}
+        {activeSubTab === 'payroll' && (
+          <form onSubmit={handleSavePayrollSettings} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', textAlign: 'left' }}>
+            <div className="card glass-card" style={{ padding: '1.5rem 2rem' }}>
+              <h2 style={{ fontSize: '1.5rem', fontWeight: 800, margin: 0 }}>Payroll Settings</h2>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.25rem', margin: 0 }}>Configure cycles, PF/PT deductions rates, and active salary components.</p>
+            </div>
+
+            {userRole !== 'ADMIN' ? (
+              <div className="card glass-card" style={{ padding: '3rem', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+                <span style={{ fontSize: '2.5rem' }}>🔒</span>
+                <strong style={{ fontSize: '1rem', color: 'var(--text-primary)' }}>Access Restricted</strong>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: 0, maxWidth: '420px' }}>
+                  You do not have administrative permissions to view or edit company payroll configuration settings. Expose security roles configurations to System Administrators only.
+                </p>
+              </div>
+            ) : (
+              <>
+                <div className="card glass-card" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                  <div className="grid-3" style={{ gap: '1rem' }}>
+                    <div className="form-group" style={{ margin: 0 }}>
+                      <label htmlFor="pay-freq">Payroll Frequency</label>
+                      <select id="pay-freq" className="form-control" value={payFreq} onChange={(e) => { setPayFreq(e.target.value); setIsDirty(true); }}>
+                        <option value="MONTHLY">Monthly</option>
+                        <option value="SEMI_MONTHLY">Semi-Monthly</option>
+                      </select>
+                    </div>
+
+                    <div className="form-group" style={{ margin: 0 }}>
+                      <label htmlFor="pay-start">Cycle Start Day</label>
+                      <input id="pay-start" type="number" className="form-control" value={payCycleStart} onChange={(e) => { setPayCycleStart(Number(e.target.value)); setIsDirty(true); }} />
+                    </div>
+
+                    <div className="form-group" style={{ margin: 0 }}>
+                      <label htmlFor="pay-end">Cycle End Day</label>
+                      <input id="pay-end" type="number" className="form-control" value={payCycleEnd} onChange={(e) => { setPayCycleEnd(Number(e.target.value)); setIsDirty(true); }} />
+                    </div>
+                  </div>
+
+                  <div className="grid-3" style={{ gap: '1rem' }}>
+                    <div className="form-group" style={{ margin: 0 }}>
+                      <label htmlFor="pay-pf-ee">PF Employee Rate</label>
+                      <input id="pay-pf-ee" type="number" step="0.01" className="form-control" value={pfEmployeeRate} onChange={(e) => { setPfEmployeeRate(Number(e.target.value)); setIsDirty(true); }} />
+                    </div>
+
+                    <div className="form-group" style={{ margin: 0 }}>
+                      <label htmlFor="pay-pf-er">PF Employer Rate</label>
+                      <input id="pay-pf-er" type="number" step="0.01" className="form-control" value={pfEmployerRate} onChange={(e) => { setPfEmployerRate(Number(e.target.value)); setIsDirty(true); }} />
+                    </div>
+
+                    <div className="form-group" style={{ margin: 0 }}>
+                      <label htmlFor="pay-pt">Professional Tax (₹)</label>
+                      <input id="pay-pt" type="number" className="form-control" value={professionalTax} onChange={(e) => { setProfessionalTax(Number(e.target.value)); setIsDirty(true); }} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Component switches */}
+                <div className="card glass-card" style={{ padding: '2rem' }}>
+                  <h3 style={{ fontSize: '1rem', marginBottom: '1rem', fontWeight: 700 }}>Active Salary Components</h3>
+                  
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }} className="grid-logo-form">
+                    {['BASIC', 'HRA', 'STANDARD_ALLOWANCE', 'PERFORMANCE_BONUS', 'LTA', 'FIXED_ALLOWANCE'].map((comp) => {
+                      const isActive = enabledComponents.includes(comp);
+                      return (
+                        <div key={comp} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#f8fafc', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border-glass)' }}>
+                          <input 
+                            type="checkbox" 
+                            id={`comp-chk-${comp}`}
+                            checked={isActive} 
+                            onChange={() => handleToggleComponent(comp)} 
+                          />
+                          <label htmlFor={`comp-chk-${comp}`} style={{ fontSize: '0.8rem', fontWeight: 'bold', cursor: 'pointer', margin: 0 }}>{comp.replace(/_/g, ' ')}</label>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+                  <button type="button" className="btn btn-secondary" style={{ minHeight: '40px', padding: '0 1.5rem' }} onClick={handleCancel}>Cancel</button>
+                  <button type="submit" className="btn-submit-request" style={{ height: '40px', padding: '0 1.5rem' }}>Save Changes</button>
+                </div>
+              </>
+            )}
+          </form>
+        )}
+
+        {/* ======================================================== */}
+        {/* PANEL 7: NOTIFICATIONS */}
+        {/* ======================================================== */}
+        {activeSubTab === 'notifications' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', textAlign: 'left' }}>
+            <div className="card glass-card" style={{ padding: '1.5rem 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <h2 style={{ fontSize: '1.5rem', fontWeight: 800, margin: 0 }}>Notification Preferences</h2>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.25rem', margin: 0 }}>Configure channels preference for transactional alerts.</p>
+              </div>
+              
+              <button type="button" className="btn btn-secondary" style={{ minHeight: '34px', padding: '0 1rem', fontSize: '0.8rem' }} onClick={handleResetNotifications}>
+                Reset to Defaults
               </button>
             </div>
 
-          </form>
-        ) : (
-          /* Placeholder view for other subtabs */
-          <div className="card glass-card" style={{ padding: '4rem 2rem', textAlign: 'center' }}>
-            <span style={{ fontSize: '2.5rem', display: 'block', marginBottom: '1rem' }}>⚙️</span>
-            <h3 style={{ margin: 0, color: 'var(--text-primary)' }}>{subTabs.find(t => t.id === activeSubTab)?.label}</h3>
-            <p style={{ color: 'var(--text-secondary)', marginTop: '0.5rem', margin: '0.5rem 0 0 0' }}>
-              This configurations panel is coming soon! Update system settings in future deployment updates.
-            </p>
+            <div className="card glass-card" style={{ padding: '2rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr repeat(3, 100px)', gap: '1rem', borderBottom: '1px solid var(--border-glass)', paddingBottom: '0.75rem', fontWeight: 'bold', fontSize: '0.85rem' }} className="grid-logo-form">
+                <span>Event Trigger</span>
+                <span style={{ textAlign: 'center' }}>In-App</span>
+                <span style={{ textAlign: 'center' }}>Email</span>
+                <span style={{ textAlign: 'center' }}>Push Alert</span>
+              </div>
+
+              {Object.keys(notifyPreferences).map((evt) => (
+                <div key={evt} style={{ display: 'grid', gridTemplateColumns: '1fr repeat(3, 100px)', gap: '1rem', borderBottom: '1px solid var(--border-glass)', padding: '0.75rem 0', alignItems: 'center' }} className="grid-logo-form">
+                  <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>{evt.replace(/_/g, ' ')}</span>
+                  
+                  <div style={{ display: 'flex', justifyContent: 'center' }}>
+                    <input type="checkbox" aria-label={`Toggle In-app for ${evt}`} checked={notifyPreferences[evt]?.includes('in-app')} onChange={() => handleToggleNotification(evt, 'in-app')} />
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'center' }}>
+                    <input type="checkbox" aria-label={`Toggle Email for ${evt}`} checked={notifyPreferences[evt]?.includes('email')} onChange={() => handleToggleNotification(evt, 'email')} />
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'center' }}>
+                    <input type="checkbox" aria-label={`Toggle Push for ${evt}`} checked={notifyPreferences[evt]?.includes('push')} onChange={() => handleToggleNotification(evt, 'push')} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ======================================================== */}
+        {/* PANEL 8: SECURITY SETTINGS */}
+        {/* ======================================================== */}
+        {activeSubTab === 'security' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', textAlign: 'left' }}>
+            <div className="card glass-card" style={{ padding: '1.5rem 2rem' }}>
+              <h2 style={{ fontSize: '1.5rem', fontWeight: 800, margin: 0 }}>Security Configuration</h2>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.25rem', margin: 0 }}>Manage Multi-Factor Authentication (MFA) and sessions controls.</p>
+            </div>
+
+            <div className="grid-2" style={{ gap: '1.5rem' }}>
+              {/* Policies config card */}
+              <div className="card glass-card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <h3 style={{ fontSize: '1rem', margin: 0, fontWeight: 700 }}>Security Settings</h3>
+                
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label htmlFor="sec-mfa">MFA Preference</label>
+                  <select id="sec-mfa" className="form-control" value={mfaPreference} onChange={(e) => { setMfaPreference(e.target.value); setIsDirty(true); }}>
+                    <option value="OPTIONAL">Optional for all users</option>
+                    <option value="ENFORCED">Enforced for all logins</option>
+                  </select>
+                </div>
+
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label htmlFor="sec-timeout">Session Timeout (Minutes)</label>
+                  <input id="sec-timeout" type="number" className="form-control" value={sessionTimeoutMins} onChange={(e) => { setSessionTimeoutMins(Number(e.target.value)); setIsDirty(true); }} />
+                </div>
+
+                <div style={{ background: '#f8fafc', border: '1px solid var(--border-glass)', padding: '1rem', borderRadius: '10px', marginTop: '0.5rem' }}>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.4, display: 'block' }}>
+                    ℹ️ <strong>System Administrator Scope Notice:</strong> Some security settings are managed by your System Administrator. Database configs, server backups, and API secret deletion are not configurable here.
+                  </span>
+                </div>
+              </div>
+
+              {/* Active Sessions monitor */}
+              <div className="card glass-card" style={{ padding: '1.5rem' }}>
+                <h3 style={{ fontSize: '1rem', marginBottom: '1.25rem', fontWeight: 700 }}>Active Logged Sessions</h3>
+                
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  {activeSessions.map((sess) => (
+                    <div key={sess.id} className="employee-list-row" style={{ padding: '0.75rem 1rem', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem', textAlign: 'left' }}>
+                        <strong style={{ fontSize: '0.85rem' }}>{sess.device}</strong>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>IP: {sess.ip} ({sess.lastActive})</span>
+                      </div>
+                      
+                      {!sess.isCurrent && (
+                        <button type="button" className="btn btn-secondary" style={{ minHeight: '28px', padding: '0 0.5rem', fontSize: '0.75rem', color: 'var(--status-leave)' }} onClick={() => handleRevokeSession(sess.id)}>
+                          Revoke
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ======================================================== */}
+        {/* PANEL 9: INTEGRATIONS */}
+        {/* ======================================================== */}
+        {activeSubTab === 'integrations' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', textAlign: 'left' }}>
+            <div className="card glass-card" style={{ padding: '1.5rem 2rem' }}>
+              <h2 style={{ fontSize: '1.5rem', fontWeight: 800, margin: 0 }}>Connected Apps & Integrations</h2>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.25rem', margin: 0 }}>Sync employee rosters and payroll logs with external endpoints.</p>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {integrationsList.map((item) => (
+                <div key={item.id} className="card glass-card" style={{ padding: '1.5rem 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', textAlign: 'left' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <strong style={{ fontSize: '1rem', color: 'var(--text-primary)' }}>{item.name}</strong>
+                      <span className={`badge ${item.status === 'CONNECTED' ? 'badge-present' : 'badge-absent'}`} style={{ padding: '0.15rem 0.5rem', fontSize: '0.7rem' }}>
+                        {item.status}
+                      </span>
+                    </div>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Type: {item.type} | Last Sync: {item.lastSync}</span>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    {item.status === 'CONNECTED' ? (
+                      <>
+                        <button type="button" className="btn btn-secondary" style={{ minHeight: '38px', padding: '0 1rem' }} onClick={() => setActiveIntegrationConfig(item)}>
+                          Configure
+                        </button>
+                        <button type="button" className="btn btn-secondary" style={{ minHeight: '38px', padding: '0 1rem', color: 'var(--status-leave)' }} onClick={() => handleDisconnectIntegration(item.id)}>
+                          Disconnect
+                        </button>
+                      </>
+                    ) : (
+                      <button type="button" className="btn-submit-request" style={{ height: '38px', padding: '0 1.25rem' }} onClick={() => { setActiveIntegrationConfig(item); setApiClientId(''); setApiClientSecret(''); }}>
+                        Connect
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
       </div>
 
+      {/* Discard changes warning modal */}
+      {showDiscardModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.4)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div className="card glass-card" style={{ padding: '2rem', maxWidth: '400px', width: '100%', textAlign: 'center', background: '#ffffff' }}>
+            <span style={{ fontSize: '2.5rem' }}>⚠️</span>
+            <h3 style={{ margin: '1rem 0 0.5rem 0', fontSize: '1.25rem', fontWeight: 'bold' }}>Unsaved Changes</h3>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: '0.5rem 0 1.5rem 0', lineHeight: 1.4 }}>
+              You have unsaved changes in this settings section. Discarding them will revert your settings back to their last saved state.
+            </p>
+            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+              <button type="button" className="btn btn-secondary" style={{ minHeight: '40px', padding: '0 1rem' }} onClick={() => setShowDiscardModal(false)}>
+                Keep Editing
+              </button>
+              <button type="button" className="btn btn-secondary" style={{ minHeight: '40px', padding: '0 1rem', background: 'var(--status-leave)', color: 'white', borderColor: 'var(--status-leave)' }} onClick={handleConfirmDiscard}>
+                Discard Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Configure Integration credentials modal */}
+      {activeIntegrationConfig && (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.4)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <form onSubmit={handleConnectIntegration} className="card glass-card" style={{ padding: '2rem', maxWidth: '440px', width: '100%', textAlign: 'left', background: '#ffffff' }}>
+            <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.2rem', fontWeight: 800 }}>Connect {activeIntegrationConfig.name}</h3>
+            
+            <div className="form-group" style={{ marginBottom: '1rem' }}>
+              <label htmlFor="int-client-id">Client ID / Token Username</label>
+              <input 
+                id="int-client-id"
+                type="text" 
+                placeholder="e.g. client_id_uuid" 
+                className="form-control" 
+                value={apiClientId} 
+                onChange={(e) => setApiClientId(e.target.value)} 
+                required 
+              />
+            </div>
+
+            <div className="form-group" style={{ marginBottom: '1.5rem' }}>
+              <label htmlFor="int-client-secret">Client Secret Key (Protected)</label>
+              <input 
+                id="int-client-secret"
+                type="password" 
+                placeholder="••••••••••••••••••••" 
+                className="form-control" 
+                value={apiClientSecret} 
+                onChange={(e) => setApiClientSecret(e.target.value)} 
+                required 
+              />
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+              <button type="button" className="btn btn-secondary" style={{ minHeight: '40px', padding: '0 1rem' }} onClick={() => setActiveIntegrationConfig(null)}>
+                Cancel
+              </button>
+              <button type="submit" className="btn-submit-request" style={{ height: '40px', padding: '0 1rem' }}>
+                Save & Connect
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
       <style>{`
-        /* Sidebar styling */
         .settings-sidebar-btn {
           width: 100%;
           border: none;
@@ -421,26 +1382,16 @@ export default function SettingsView() {
           font-weight: 700;
         }
 
-        /* Inputs elements styling overrides */
-        .settings-page-grid .input-icon-wrapper {
-          position: relative;
-          display: flex;
-          align-items: center;
+        .error-border {
+          border-color: var(--status-leave) !important;
+          box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.15) !important;
+        }
+
+        .mobile-dropdown-nav {
+          display: none;
+          text-align: left;
           width: 100%;
-        }
-
-        .settings-page-grid .input-icon-span {
-          position: absolute;
-          left: 12px;
-          display: flex;
-          align-items: center;
-          color: var(--text-muted);
-          pointer-events: none;
-        }
-
-        .settings-page-grid .form-control {
-          padding-left: 2.25rem !important;
-          background-color: #ffffff;
+          margin-bottom: 1rem;
         }
 
         @media (max-width: 768px) {
@@ -449,6 +1400,13 @@ export default function SettingsView() {
           }
           .settings-sidebar {
             width: 100% !important;
+            padding: 0.75rem !important;
+          }
+          .settings-nav-list {
+            display: none !important;
+          }
+          .mobile-dropdown-nav {
+            display: block !important;
           }
           .grid-logo-form {
             grid-template-columns: 1fr !important;

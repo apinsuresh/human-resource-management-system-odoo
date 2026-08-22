@@ -5,7 +5,8 @@ import {
   mockGetEmployees, 
   mockGetSalaryConfig, 
   mockUpdateSalaryConfig, 
-  mockGetPayableDaysSummary
+  mockGetPayableDaysSummary,
+  mockCalculatePayslip
 } from '../mockApi';
 import { showToast } from '../components/Toast';
 
@@ -103,41 +104,17 @@ export default function PayrollView({ userRole }: PayrollViewProps) {
       return;
     }
 
-    const prorationRatio = payable / workingDays;
-    const baseWage = salaryConfig.wageAmount;
-    const proratedWage = Math.round(baseWage * prorationRatio);
-
-    const proratedComponents = salaryConfig.components.map((comp) => ({
-      ...comp,
-      computedAmount: Math.round(comp.computedAmount * prorationRatio),
-    }));
-
-    const basicComp = proratedComponents.find(c => c.name === 'BASIC');
-    const basicAmount = basicComp ? basicComp.computedAmount : 0;
-    
-    const pfEmployee = Math.round(basicAmount * salaryConfig.pfEmployeeRate);
-    const pfEmployer = Math.round(basicAmount * salaryConfig.pfEmployerRate);
-    const pt = payable > 0 ? salaryConfig.professionalTax : 0;
-
-    const totalDeductions = pfEmployee + pt;
-    const netSalary = proratedWage - totalDeductions;
-
-    setGeneratedPayslip({
-      month: payslipMonth,
-      year: payslipYear,
-      baseWage,
-      proratedWage,
-      components: proratedComponents,
-      pfEmployee,
-      pfEmployer,
-      professionalTax: pt,
-      totalDeductions,
-      netSalary,
-      payableDays: payable,
-      workingDays
-    });
-
-    showToast('Payslip generated successfully!', 'success');
+    try {
+      const result = mockCalculatePayslip(salaryConfig, payable, workingDays);
+      setGeneratedPayslip({
+        ...result,
+        month: payslipMonth,
+        year: payslipYear
+      });
+      showToast('Payslip generated successfully!', 'success');
+    } catch (err: any) {
+      showToast(err.message || 'Proration error.', 'error');
+    }
   };
 
   const formatCurrency = (paise: number) => {
