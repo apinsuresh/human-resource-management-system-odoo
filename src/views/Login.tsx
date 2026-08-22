@@ -214,7 +214,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
 
         .login-card {
           background-color: var(--bg-card);
-          border: 1px solid var(--border-color);
+          border: 1px solid var(--border-glass);
           border-radius: 16px;
           padding: 2.5rem;
           width: 100%;
@@ -275,7 +275,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
         .demo-accounts-box {
           margin-top: 2rem;
           padding-top: 1.5rem;
-          border-top: 1px solid var(--border-color);
+          border-top: 1px solid var(--border-glass);
           text-align: center;
         }
 
