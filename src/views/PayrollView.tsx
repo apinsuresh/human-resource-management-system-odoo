@@ -29,7 +29,6 @@ export default function PayrollView({ userRole }: PayrollViewProps) {
   const [generatedPayslip, setGeneratedPayslip] = useState<any | null>(null);
 
   useEffect(() => {
-    // Only fetch employees if caller is ADMIN
     if (userRole === 'ADMIN') {
       const emps = mockGetEmployees('ADMIN', false) as Employee[];
       setEmployees(emps);
@@ -76,7 +75,6 @@ export default function PayrollView({ userRole }: PayrollViewProps) {
       setSalaryConfig(updated);
       showToast('Salary configuration updated and components recalculated!', 'success');
     } catch (err: any) {
-      // Handles ERR-CALC-01
       showToast(err.message || 'Failed to save wage details.', 'error');
     } finally {
       setLoading(false);
@@ -97,7 +95,6 @@ export default function PayrollView({ userRole }: PayrollViewProps) {
   const handleGeneratePayslip = () => {
     if (!salaryConfig || !payableDaysDetails) return;
 
-    // Prorate math: (baseSalary / totalWorkingDays) * payableDays
     const workingDays = payableDaysDetails.totalWorkingDays;
     const payable = payableDaysDetails.payableDays;
     
@@ -110,21 +107,16 @@ export default function PayrollView({ userRole }: PayrollViewProps) {
     const baseWage = salaryConfig.wageAmount;
     const proratedWage = Math.round(baseWage * prorationRatio);
 
-    // Prorate components
     const proratedComponents = salaryConfig.components.map((comp) => ({
       ...comp,
       computedAmount: Math.round(comp.computedAmount * prorationRatio),
     }));
 
-    // Deductions
     const basicComp = proratedComponents.find(c => c.name === 'BASIC');
     const basicAmount = basicComp ? basicComp.computedAmount : 0;
     
-    // PF - 12% basic (employee & employer)
     const pfEmployee = Math.round(basicAmount * salaryConfig.pfEmployeeRate);
     const pfEmployer = Math.round(basicAmount * salaryConfig.pfEmployerRate);
-    
-    // Professional tax (fixed ₹200 or 20000 paise - prorated if working days = 0, otherwise fixed)
     const pt = payable > 0 ? salaryConfig.professionalTax : 0;
 
     const totalDeductions = pfEmployee + pt;
@@ -149,179 +141,287 @@ export default function PayrollView({ userRole }: PayrollViewProps) {
   };
 
   const formatCurrency = (paise: number) => {
-    return `₹${(paise / 100).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    return `₹ ${(paise / 100).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
   const getMonthName = (monthIdx: number) => {
     return new Date(2026, monthIdx, 1).toLocaleString('default', { month: 'long' });
   };
 
-  // Block non-admin access immediately
   if (userRole !== 'ADMIN') {
     return (
       <div className="page-container">
-        <div className="card error-card">
-          <div className="error-icon">🚫</div>
-          <h3>403 Access Forbidden (ERR-SEC-01)</h3>
-          <p>You do not have administrative permissions to view or edit payroll configuration settings.</p>
+        <div className="card glass-card error-card" style={{ padding: '3rem', textAlign: 'center' }}>
+          <span style={{ fontSize: '3rem', display: 'block', marginBottom: '1rem' }}>🚫</span>
+          <h3>403 Access Forbidden</h3>
+          <p style={{ color: 'var(--text-secondary)', marginTop: '0.5rem' }}>You do not have administrative permissions to view or edit payroll configuration settings.</p>
         </div>
       </div>
     );
   }
 
   const activeEmployee = employees.find(e => e.id === selectedEmpId);
+  const totalFixedPayRaw = salaryConfig ? salaryConfig.wageAmount : 0;
 
   return (
-    <div className="page-container">
-      <div className="payroll-layout">
-        {/* Selection sidebar */}
-        <div className="card employee-select-card">
-          <h3>Select Employee</h3>
-          <div className="form-group" style={{ marginTop: '1rem' }}>
-            <label htmlFor="emp-picker" className="visually-hidden">Choose Employee</label>
-            <select 
-              id="emp-picker" 
-              className="form-control"
-              value={selectedEmpId}
-              onChange={(e) => setSelectedEmpId(e.target.value)}
-            >
-              {employees.map((e) => (
-                <option key={e.id} value={e.id}>
-                  {e.firstName} {e.lastName} ({e.loginId})
-                </option>
-              ))}
-            </select>
+    <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+      {/* Title Breadcrumbs */}
+      <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left', marginBottom: '1.5rem' }}>
+        <h2 style={{ fontSize: '1.5rem', fontWeight: 800 }}>Base Salary Setup</h2>
+        <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.15rem', fontWeight: 'bold' }}>
+          Payroll &gt; Base Salary Setup
+        </span>
+      </div>
+
+      <form onSubmit={handleUpdateWage} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', width: '100%' }}>
+        
+        {/* Card 1: Select Employee */}
+        <div className="card glass-card" style={{ display: 'flex', padding: '1.5rem 2rem', justifyContent: 'space-between', alignItems: 'center', gap: '2rem', flexWrap: 'wrap' }}>
+          <div style={{ flex: 1, minWidth: '280px', textAlign: 'left' }}>
+            <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1rem', color: 'var(--text-primary)' }}>
+              1. Select Employee
+            </h3>
+            
+            <div className="form-group" style={{ marginBottom: '1.25rem' }}>
+              <label htmlFor="emp-picker" style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.35rem' }}>
+                Choose Employee *
+              </label>
+              <select 
+                id="emp-picker" 
+                className="form-control"
+                style={{ minHeight: '38px', borderRadius: '8px' }}
+                value={selectedEmpId}
+                onChange={(e) => setSelectedEmpId(e.target.value)}
+              >
+                {employees.map((e) => (
+                  <option key={e.id} value={e.id}>
+                    {e.firstName} {e.lastName} ({e.loginId})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {activeEmployee && (
+              <div className="hero-stats-row" style={{ display: 'flex', gap: '1.5rem', marginTop: '1.5rem' }}>
+                <div className="hero-stat-pill">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                  <div className="hero-stat-pill-info">
+                    <span>Role</span>
+                    <strong>{activeEmployee.role === 'ADMIN' ? 'Admin' : activeEmployee.role === 'HR_OFFICER' ? 'HR Officer' : 'Employee'}</strong>
+                  </div>
+                </div>
+                <div className="hero-stat-pill">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+                  <div className="hero-stat-pill-info">
+                    <span>Department</span>
+                    <strong>{activeEmployee.department}</strong>
+                  </div>
+                </div>
+                <div className="hero-stat-pill">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                  <div className="hero-stat-pill-info">
+                    <span>Joining Date</span>
+                    <strong>{activeEmployee.dateOfJoining}</strong>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
-          {activeEmployee && (
-            <div className="emp-summary-payroll">
-              <div className="emp-summary-row"><strong>Role:</strong> {activeEmployee.role}</div>
-              <div className="emp-summary-row"><strong>Dept:</strong> {activeEmployee.department}</div>
-              <div className="emp-summary-row"><strong>Joining Date:</strong> {activeEmployee.dateOfJoining}</div>
+          {/* Setup Base illustration */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', minWidth: '320px' }}>
+            <div style={{ textAlign: 'left', maxWidth: '180px' }}>
+              <strong style={{ display: 'block', fontSize: '0.9rem', color: 'var(--text-primary)', marginBottom: '0.25rem' }}>
+                Setup base salary and components
+              </strong>
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                Configure the employee's base salary and allowances for payroll processing.
+              </span>
+            </div>
+            <div className="illustration-rupee-plant">
+              <svg width="90" height="90" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ opacity: 0.95 }} aria-hidden="true">
+                <rect x="50" y="20" width="45" height="60" rx="4" fill="#F8FAFC" stroke="#E2E8F0" strokeWidth="2.5" />
+                <line x1="60" y1="36" x2="85" y2="36" stroke="#CBD5E1" strokeWidth="2.5" strokeLinecap="round" />
+                <line x1="60" y1="46" x2="78" y2="46" stroke="#CBD5E1" strokeWidth="2.5" strokeLinecap="round" />
+                <line x1="60" y1="56" x2="85" y2="56" stroke="#CBD5E1" strokeWidth="2.5" strokeLinecap="round" />
+                <circle cx="45" cy="80" r="18" fill="#2563EB" />
+                <text x="45" y="86" fill="#FFFFFF" fontSize="18" fontWeight="bold" textAnchor="middle" fontFamily="var(--font-heading)">₹</text>
+                <path d="M22 100c4-8 12-10 18-6-4 8-12 10-18 6z" fill="#34D399" opacity="0.8" />
+                <path d="M102 85c-4-8-12-10-18-6 4 8 12 10 18 6z" fill="#6366F1" opacity="0.6" />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        {/* Card 2: Base Salary & Components */}
+        <div className="card glass-card" style={{ padding: '1.5rem 2rem', textAlign: 'left' }}>
+          <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1.25rem', color: 'var(--text-primary)' }}>
+            2. Base Salary & Components
+          </h3>
+
+          <div className="grid-3" style={{ marginBottom: '1.5rem' }}>
+            <div className="form-group">
+              <label htmlFor="pay-frequency" style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.35rem' }}>Pay Frequency</label>
+              <select id="pay-frequency" className="form-control" style={{ minHeight: '38px', borderRadius: '8px' }} defaultValue="Monthly">
+                <option>Monthly</option>
+                <option>Yearly</option>
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="base-wage-rs" style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.35rem' }}>Base Salary (₹) *</label>
+              <div className="input-icon-wrapper">
+                <span style={{ position: 'absolute', left: '12px', fontSize: '0.9rem', color: 'var(--text-secondary)', fontWeight: 'bold' }}>₹</span>
+                <input 
+                  type="number" 
+                  id="base-wage-rs" 
+                  className="form-control" 
+                  style={{ minHeight: '38px', borderRadius: '8px', paddingLeft: '2.2rem' }}
+                  value={monthlyWage}
+                  onChange={(e) => setMonthlyWage(e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="effective-date" style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.35rem' }}>Effective From *</label>
+              <input 
+                type="date" 
+                id="effective-date" 
+                className="form-control" 
+                style={{ minHeight: '38px', borderRadius: '8px' }} 
+                defaultValue="2025-05-01"
+              />
+            </div>
+          </div>
+
+          {/* Salary Components Table */}
+          {salaryConfig && salaryConfig.wageAmount > 0 ? (
+            <div className="components-table-section" style={{ marginTop: '1.5rem' }}>
+              <h4 style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '0.75rem', fontWeight: 'bold' }}>
+                Salary Components
+              </h4>
+              
+              <div className="table-responsive">
+                <table className="attendance-table">
+                  <thead>
+                    <tr>
+                      <th style={{ width: '40px' }}></th>
+                      <th>COMPONENT NAME</th>
+                      <th>TYPE</th>
+                      <th>AMOUNT (₹)</th>
+                      <th style={{ textAlign: 'center' }}>TAXABLE</th>
+                      <th style={{ textAlign: 'center' }}>ACTIONS</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {salaryConfig.components.map((c) => (
+                      <tr key={c.name}>
+                        <td style={{ verticalAlign: 'middle' }}>
+                          <svg width="12" height="18" viewBox="0 0 12 18" fill="none" style={{ color: '#94a3b8', cursor: 'grab' }} aria-hidden="true">
+                            <circle cx="2" cy="3" r="1.2" fill="currentColor"/>
+                            <circle cx="2" cy="9" r="1.2" fill="currentColor"/>
+                            <circle cx="2" cy="15" r="1.2" fill="currentColor"/>
+                            <circle cx="10" cy="3" r="1.2" fill="currentColor"/>
+                            <circle cx="10" cy="9" r="1.2" fill="currentColor"/>
+                            <circle cx="10" cy="15" r="1.2" fill="currentColor"/>
+                          </svg>
+                        </td>
+                        <td><strong>{c.name.replace(/_/g, ' ')}</strong></td>
+                        <td>
+                          <select className="form-control" style={{ minHeight: '28px', padding: '0 0.5rem', width: '130px', fontSize: '0.8rem' }} aria-label="Component type">
+                            <option>Allowance</option>
+                            <option>Deduction</option>
+                          </select>
+                        </td>
+                        <td>
+                          <input 
+                            type="text" 
+                            className="form-control" 
+                            style={{ minHeight: '28px', padding: '0 0.5rem', width: '120px', fontSize: '0.8rem' }} 
+                            value={(c.computedAmount / 100).toFixed(2)}
+                            readOnly
+                          />
+                        </td>
+                        <td style={{ textAlign: 'center' }}>
+                          <input type="checkbox" defaultChecked style={{ width: '15px', height: '15px' }} aria-label="Taxable" />
+                        </td>
+                        <td style={{ textAlign: 'center' }}>
+                          <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+                            <button type="button" className="action-dots-btn" style={{ width: '26px', height: '26px', fontSize: '0.8rem' }} title="Edit" onClick={() => showToast('Editing component... (Mocked)', 'info')}>
+                              ✎
+                            </button>
+                            <button type="button" className="action-dots-btn" style={{ width: '26px', height: '26px', fontSize: '0.8rem', color: 'var(--status-leave)' }} title="Delete" onClick={() => showToast('Deleting component... (Mocked)', 'info')}>
+                              🗑
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Add Component button */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1.25rem' }}>
+                <button 
+                  type="button" 
+                  className="pagination-btn" 
+                  style={{ width: 'auto', padding: '0 1rem', height: '34px', borderRadius: '8px', color: 'var(--accent-primary)', borderColor: 'rgba(37,99,235,0.2)' }}
+                  onClick={() => showToast('Component addition coming soon! (Mocked)', 'info')}
+                >
+                  + Add Component
+                </button>
+
+                <div style={{ textAlign: 'right', fontSize: '0.95rem' }}>
+                  <span style={{ color: 'var(--text-secondary)' }}>Total Fixed Pay: </span>
+                  <strong style={{ color: 'var(--text-primary)', fontSize: '1.15rem', marginLeft: '6px' }}>
+                    {formatCurrency(totalFixedPayRaw)}
+                  </strong>
+                </div>
+              </div>
+
+            </div>
+          ) : (
+            <div style={{ padding: '2rem 0', textAlign: 'center', color: 'var(--text-secondary)' }}>
+              ⚠️ Choose an employee to populate configurations.
             </div>
           )}
         </div>
 
-        {/* Salary Configuration Form */}
-        <div className="card config-card">
-          <h3>Base Salary Setup</h3>
-          {salaryConfig ? (
-            <>
-              <form onSubmit={handleUpdateWage} style={{ marginTop: '1.25rem' }}>
-                <div className="form-group">
-                  <label htmlFor="base-wage-rs">Base Monthly Wage (in ₹)</label>
-                  <div className="wage-input-row">
-                    <input 
-                      type="number" 
-                      id="base-wage-rs" 
-                      className="form-control" 
-                      value={monthlyWage}
-                      onChange={(e) => setMonthlyWage(e.target.value)}
-                      required
-                    />
-                    <button type="submit" className="btn btn-primary" disabled={loading}>
-                      {loading ? 'Recalculating...' : 'Update & Recalculate'}
-                    </button>
-                  </div>
-                </div>
-              </form>
-
-              {salaryConfig.wageAmount > 0 ? (
-                <div className="components-table-section">
-                  <h4>Computed Salary Components</h4>
-                  <table className="payroll-table">
-                    <thead>
-                      <tr>
-                        <th>Component</th>
-                        <th>Calculation Logic</th>
-                        <th>Computed Amount (Monthly)</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {salaryConfig.components.map((c) => (
-                        <tr key={c.name}>
-                          <td><strong>{c.name.replace(/_/g, ' ')}</strong></td>
-                          <td>
-                            {c.computationType === 'PERCENTAGE_OF_WAGE' && `${c.computationValue}% of Base Wage`}
-                            {c.computationType === 'PERCENTAGE_OF_COMPONENT' && `${c.computationValue}% of ${c.referenceComponent}`}
-                            {c.computationType === 'FIXED_AMOUNT' && `Fixed Allowance`}
-                          </td>
-                          <td>{formatCurrency(c.computedAmount)}</td>
-                        </tr>
-                      ))}
-                      <tr className="sum-row">
-                        <td colSpan={2}><strong>Total Base Monthly Wage</strong></td>
-                        <td><strong>{formatCurrency(salaryConfig.wageAmount)}</strong></td>
-                      </tr>
-                    </tbody>
-                  </table>
-
-                  <h4 style={{ marginTop: '2rem' }}>Statutory Deductions (Monthly)</h4>
-                  <table className="payroll-table">
-                    <thead>
-                      <tr>
-                        <th>Deduction Item</th>
-                        <th>Rate / Logic</th>
-                        <th>Employee Share</th>
-                        <th>Employer Share</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {/* PF Row */}
-                      <tr>
-                        <td><strong>Provident Fund (PF)</strong></td>
-                        <td>12.00% of Basic Salary</td>
-                        {/* PF Employee */}
-                        <td>
-                          {formatCurrency(
-                            Math.round(
-                              (salaryConfig.components.find(c => c.name === 'BASIC')?.computedAmount || 0) * 0.12
-                            )
-                          )}
-                        </td>
-                        {/* PF Employer */}
-                        <td>
-                          {formatCurrency(
-                            Math.round(
-                              (salaryConfig.components.find(c => c.name === 'BASIC')?.computedAmount || 0) * 0.12
-                            )
-                          )}
-                        </td>
-                      </tr>
-                      {/* Professional Tax */}
-                      <tr>
-                        <td><strong>Professional Tax</strong></td>
-                        <td>Fixed Tax (State Rate)</td>
-                        <td>{formatCurrency(salaryConfig.professionalTax)}</td>
-                        <td>--</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <div className="unconfigured-warning">
-                  ⚠️ Base monthly wage is currently set to zero. Please enter a wage above to populate components.
-                </div>
-              )}
-            </>
-          ) : (
-            <p>Loading configurations...</p>
-          )}
+        {/* Form Submission Button */}
+        <div style={{ overflow: 'hidden' }}>
+          <button 
+            type="submit" 
+            className="btn-submit-request" 
+            style={{ float: 'right', height: '40px', minWidth: '180px', display: 'flex', justifyContent: 'center' }} 
+            disabled={loading}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }} aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+            {loading ? 'Recalculating...' : 'Save Configuration'}
+          </button>
         </div>
-      </div>
+
+      </form>
 
       {/* Payslip Processing Panel */}
       {salaryConfig && salaryConfig.wageAmount > 0 && (
-        <div className="card payslip-card" style={{ marginTop: '2rem' }}>
-          <h3>Payslip Processing Engine</h3>
-          <p className="onboard-desc">Queries attendance and leave history to calculate total payable working days, generating prorated payslips.</p>
+        <div className="card glass-card" style={{ marginTop: '2rem', textAlign: 'left' }}>
+          <div className="card-title-row" style={{ borderBottom: '1px solid var(--border-glass)', paddingBottom: '0.75rem', marginBottom: '1.25rem' }}>
+            <h3>Payslip Processing Engine</h3>
+          </div>
+          <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
+            Queries attendance and leave history to calculate total payable working days, generating prorated payslips.
+          </p>
 
-          <div className="payslip-config-row">
-            <div className="form-group min-input">
-              <label htmlFor="pay-month">Select Pay Period Month</label>
+          <div className="grid-3" style={{ marginBottom: '1.5rem', alignItems: 'flex-end' }}>
+            <div className="form-group">
+              <label htmlFor="pay-month" style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.35rem' }}>Select Pay Period Month</label>
               <select 
                 id="pay-month" 
                 className="form-control" 
+                style={{ minHeight: '38px', borderRadius: '8px' }}
                 value={payslipMonth}
                 onChange={(e) => setPayslipMonth(parseInt(e.target.value))}
               >
@@ -331,11 +431,12 @@ export default function PayrollView({ userRole }: PayrollViewProps) {
               </select>
             </div>
 
-            <div className="form-group min-input">
-              <label htmlFor="pay-year">Select Year</label>
+            <div className="form-group">
+              <label htmlFor="pay-year" style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.35rem' }}>Select Year</label>
               <select 
                 id="pay-year" 
                 className="form-control" 
+                style={{ minHeight: '38px', borderRadius: '8px' }}
                 value={payslipYear}
                 onChange={(e) => setPayslipYear(parseInt(e.target.value))}
               >
@@ -344,90 +445,101 @@ export default function PayrollView({ userRole }: PayrollViewProps) {
               </select>
             </div>
 
-            <button type="button" className="btn btn-secondary align-btn" onClick={handleCalculatePayableDays}>
+            <button 
+              type="button" 
+              className="pagination-btn" 
+              style={{ height: '38px', width: '220px', color: 'var(--accent-primary)', borderColor: 'rgba(37,99,235,0.2)' }} 
+              onClick={handleCalculatePayableDays}
+            >
               Calculate Payable Days
             </button>
           </div>
 
           {payableDaysDetails && (
-            <div className="payable-days-summary border-box">
-              <h4>Payable Days Audit Summary for {getMonthName(payslipMonth)} {payslipYear}</h4>
-              <div className="grid-4 metrics-row">
-                <div className="metric-cell">
-                  <span className="lbl">Working Days in Period</span>
-                  <span className="val">{payableDaysDetails.totalWorkingDays} days</span>
+            <div className="payable-days-summary" style={{ background: 'rgba(255,255,255,0.5)', padding: '1.25rem', borderRadius: '12px', border: '1px solid var(--border-glass)', marginTop: '1.5rem' }}>
+              <h4 style={{ fontSize: '0.9rem', fontWeight: 'bold', marginBottom: '1rem', color: 'var(--text-primary)' }}>
+                Payable Days Audit Summary for {getMonthName(payslipMonth)} {payslipYear}
+              </h4>
+              
+              <div className="grid-4" style={{ marginBottom: '1.25rem' }}>
+                <div className="employee-list-checkin" style={{ alignItems: 'flex-start', textAlign: 'left', borderRight: '1px solid var(--border-glass)', paddingRight: '1rem' }}>
+                  <span>Working Days in Period</span>
+                  <strong style={{ fontSize: '1.25rem' }}>{payableDaysDetails.totalWorkingDays} days</strong>
                 </div>
-                <div className="metric-cell">
-                  <span className="lbl">Present Days logged</span>
-                  <span className="val">{payableDaysDetails.presentDays} days</span>
+                <div className="employee-list-checkin" style={{ alignItems: 'flex-start', textAlign: 'left', borderRight: '1px solid var(--border-glass)', paddingRight: '1rem' }}>
+                  <span>Present Days logged</span>
+                  <strong style={{ fontSize: '1.25rem' }}>{payableDaysDetails.presentDays} days</strong>
                 </div>
-                <div className="metric-cell">
-                  <span className="lbl">Unpaid Leaves approved</span>
-                  <span className="val text-red">{payableDaysDetails.unpaidLeaveDays} days</span>
+                <div className="employee-list-checkin" style={{ alignItems: 'flex-start', textAlign: 'left', borderRight: '1px solid var(--border-glass)', paddingRight: '1rem' }}>
+                  <span>Unpaid Leaves approved</span>
+                  <strong style={{ fontSize: '1.25rem', color: 'var(--status-leave)' }}>{payableDaysDetails.unpaidLeaveDays} days</strong>
                 </div>
-                <div className="metric-cell final-payable">
-                  <span className="lbl">Net Payable Days</span>
-                  <span className="val text-green">{payableDaysDetails.payableDays} days</span>
+                <div className="employee-list-checkin" style={{ alignItems: 'flex-start', textAlign: 'left' }}>
+                  <span>Net Payable Days</span>
+                  <strong style={{ fontSize: '1.25rem', color: 'var(--status-present)' }}>{payableDaysDetails.payableDays} days</strong>
                 </div>
               </div>
 
               {payableDaysDetails.missingDays > 0 && (
-                <div className="missing-alert">
+                <div className="missing-alert" style={{ background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.15)', color: '#d97706', padding: '0.75rem 1rem', borderRadius: '8px', fontSize: '0.8rem', marginBottom: '1.25rem' }}>
                   ⚠️ <strong>Unrecorded Check-ins:</strong> The employee is missing {payableDaysDetails.missingDays} attendance check-ins this month (Unrecorded absences reduce payable days).
                 </div>
               )}
 
-              <button type="button" className="btn btn-primary" onClick={handleGeneratePayslip}>
+              <button 
+                type="button" 
+                className="btn-submit-request" 
+                style={{ height: '36px', width: '220px', display: 'flex', justifyContent: 'center' }} 
+                onClick={handleGeneratePayslip}
+              >
                 Generate Prorated Payslip
               </button>
             </div>
           )}
 
-          {/* Rendered Payslip Result */}
+          {/* Rendered Payslip Result Invoice */}
           {generatedPayslip && (
-            <div className="generated-payslip-invoice border-box">
-              <div className="payslip-invoice-header">
+            <div className="generated-payslip-invoice" style={{ marginTop: '1.5rem', background: '#ffffff', padding: '1.5rem', borderRadius: '12px', border: '1px solid var(--border-glass)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-glass)', paddingBottom: '1rem', marginBottom: '1.25rem' }}>
                 <div>
-                  <h4>PAYSLIP INVOICE</h4>
-                  <span>Period: {getMonthName(generatedPayslip.month)} {generatedPayslip.year}</span>
+                  <h4 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-primary)' }}>PAYSLIP INVOICE</h4>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Period: {getMonthName(generatedPayslip.month)} {generatedPayslip.year}</span>
                 </div>
-                <div style={{ textAlign: 'right' }}>
+                <div style={{ textAlign: 'right', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
                   <strong>Employee:</strong> {activeEmployee?.firstName} {activeEmployee?.lastName}<br />
                   <strong>ID:</strong> {activeEmployee?.loginId}
                 </div>
               </div>
 
-              <div className="payslip-invoice-columns">
-                {/* Earnings */}
-                <div className="invoice-col">
-                  <h5>Earnings (Prorated)</h5>
-                  <ul>
+              <div className="grid-2">
+                <div>
+                  <h5 style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '0.75rem', fontWeight: 'bold' }}>Earnings (Prorated)</h5>
+                  <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                     {generatedPayslip.components.map((c: any) => (
-                      <li key={c.name}>
+                      <li key={c.name} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
                         <span>{c.name.replace(/_/g, ' ')}</span>
-                        <span>{formatCurrency(c.computedAmount)}</span>
+                        <strong>{formatCurrency(c.computedAmount)}</strong>
                       </li>
                     ))}
-                    <li className="col-total">
+                    <li style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', fontWeight: 'bold', borderTop: '1px solid var(--border-glass)', paddingTop: '0.5rem', marginTop: '0.5rem' }}>
                       <span>Gross Earnings</span>
                       <span>{formatCurrency(generatedPayslip.proratedWage)}</span>
                     </li>
                   </ul>
                 </div>
 
-                {/* Deductions */}
-                <div className="invoice-col">
-                  <h5>Deductions</h5>
-                  <ul>
-                    <li>
+                <div style={{ borderLeft: '1px solid var(--border-glass)', paddingLeft: '1.5rem' }}>
+                  <h5 style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '0.75rem', fontWeight: 'bold' }}>Deductions</h5>
+                  <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    <li style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
                       <span>Provident Fund (PF) Employee Share</span>
-                      <span>{formatCurrency(generatedPayslip.pfEmployee)}</span>
+                      <strong>{formatCurrency(generatedPayslip.pfEmployee)}</strong>
                     </li>
-                    <li>
+                    <li style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
                       <span>Professional Tax</span>
-                      <span>{formatCurrency(generatedPayslip.professionalTax)}</span>
+                      <strong>{formatCurrency(generatedPayslip.professionalTax)}</strong>
                     </li>
-                    <li className="col-total">
+                    <li style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', fontWeight: 'bold', borderTop: '1px solid var(--border-glass)', paddingTop: '0.5rem', marginTop: '0.5rem' }}>
                       <span>Total Deductions</span>
                       <span>{formatCurrency(generatedPayslip.totalDeductions)}</span>
                     </li>
@@ -435,12 +547,14 @@ export default function PayrollView({ userRole }: PayrollViewProps) {
                 </div>
               </div>
 
-              <div className="payslip-invoice-footer">
-                <div className="net-take-home">
-                  <span>NET TAKE-HOME PAY</span>
-                  <h3>{formatCurrency(generatedPayslip.netSalary)}</h3>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border-glass)', paddingTop: '1rem', marginTop: '1.25rem' }}>
+                <div style={{ textAlign: 'left' }}>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>NET TAKE-HOME PAY</span>
+                  <h3 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--accent-primary)', marginTop: '0.15rem' }}>
+                    {formatCurrency(generatedPayslip.netSalary)}
+                  </h3>
                 </div>
-                <div className="audit-detail">
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', maxWidth: '320px', textAlign: 'right' }}>
                   Calculated from base monthly salary {formatCurrency(generatedPayslip.baseWage)} prorated to {generatedPayslip.payableDays} of {generatedPayslip.workingDays} working days.
                 </div>
               </div>
@@ -449,278 +563,6 @@ export default function PayrollView({ userRole }: PayrollViewProps) {
         </div>
       )}
 
-      <style>{`
-        .payroll-layout {
-          display: grid;
-          grid-template-columns: 280px 1fr;
-          gap: 1.5rem;
-          align-items: start;
-        }
-
-        .employee-select-card {
-          padding: 1.25rem;
-        }
-
-        .emp-summary-payroll {
-          margin-top: 1rem;
-          border-top: 1px solid var(--border-color);
-          padding-top: 1rem;
-          font-size: 0.85rem;
-          display: flex;
-          flex-direction: column;
-          gap: 0.5rem;
-        }
-
-        .wage-input-row {
-          display: flex;
-          gap: 0.75rem;
-        }
-
-        .wage-input-row input {
-          max-width: 250px;
-        }
-
-        .components-table-section {
-          margin-top: 2rem;
-        }
-
-        .components-table-section h4 {
-          font-size: 1rem;
-          font-weight: 700;
-          margin-bottom: 0.75rem;
-        }
-
-        .payroll-table {
-          width: 100%;
-          border-collapse: collapse;
-          font-size: 0.9rem;
-          text-align: left;
-          margin-bottom: 1.5rem;
-        }
-
-        .payroll-table th, .payroll-table td {
-          padding: 0.75rem 1rem;
-          border-bottom: 1px solid var(--border-color);
-        }
-
-        .payroll-table th {
-          font-family: var(--font-heading);
-          color: var(--text-secondary);
-          font-weight: 600;
-        }
-
-        .sum-row td {
-          border-top: 2px solid var(--text-primary);
-          background-color: var(--bg-app);
-          font-size: 0.95rem;
-        }
-
-        .unconfigured-warning {
-          background-color: var(--status-absent-light);
-          border: 1px dashed rgba(245, 158, 11, 0.3);
-          color: var(--text-primary);
-          padding: 1.25rem;
-          border-radius: 8px;
-          text-align: center;
-          font-size: 0.9rem;
-          margin-top: 1.5rem;
-        }
-
-        .error-card {
-          text-align: center;
-          padding: 4rem 2rem;
-        }
-
-        .error-icon {
-          font-size: 3rem;
-          margin-bottom: 1rem;
-        }
-
-        .payslip-config-row {
-          display: flex;
-          gap: 1.25rem;
-          align-items: flex-end;
-          flex-wrap: wrap;
-          margin-top: 1.5rem;
-          margin-bottom: 1.5rem;
-        }
-
-        .min-input {
-          max-width: 200px;
-          width: 100%;
-        }
-
-        .align-btn {
-          height: 48px;
-          margin-bottom: 1.25rem;
-        }
-
-        .border-box {
-          border: 1px solid var(--border-color);
-          border-radius: 8px;
-          padding: 1.5rem;
-          background-color: var(--bg-app);
-          margin-top: 1.5rem;
-        }
-
-        .payable-days-summary h4 {
-          font-size: 1rem;
-          font-weight: 700;
-          margin-bottom: 1rem;
-        }
-
-        .metrics-row {
-          margin-bottom: 1.25rem;
-        }
-
-        .metric-cell {
-          display: flex;
-          flex-direction: column;
-          background-color: var(--bg-card);
-          border: 1px solid var(--border-color);
-          padding: 1rem;
-          border-radius: 6px;
-        }
-
-        .metric-cell .lbl {
-          font-size: 0.75rem;
-          font-weight: 600;
-          color: var(--text-secondary);
-          text-transform: uppercase;
-        }
-
-        .metric-cell .val {
-          font-size: 1.25rem;
-          font-weight: 800;
-          margin-top: 0.25rem;
-        }
-
-        .metric-cell.final-payable {
-          background-color: var(--status-present-light);
-          border-color: rgba(16, 185, 129, 0.2);
-        }
-
-        .text-red { color: var(--error); }
-        .text-green { color: var(--status-present); }
-
-        .missing-alert {
-          background-color: var(--error-light);
-          border: 1px solid rgba(239, 68, 68, 0.2);
-          padding: 1rem;
-          border-radius: 6px;
-          font-size: 0.85rem;
-          margin-bottom: 1.25rem;
-          line-height: 1.4;
-        }
-
-        .generated-payslip-invoice {
-          background-color: var(--bg-card) !important;
-          border: 1px solid var(--border-color);
-          box-shadow: var(--shadow-md);
-        }
-
-        .payslip-invoice-header {
-          display: flex;
-          justify-content: space-between;
-          border-bottom: 2px solid var(--text-primary);
-          padding-bottom: 1rem;
-          margin-bottom: 1.5rem;
-          font-size: 0.9rem;
-        }
-
-        .payslip-invoice-header h4 {
-          font-size: 1.2rem;
-          font-weight: 800;
-          letter-spacing: 0.5px;
-        }
-
-        .payslip-invoice-columns {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 2rem;
-          margin-bottom: 1.5rem;
-        }
-
-        .invoice-col h5 {
-          font-family: var(--font-heading);
-          font-size: 0.9rem;
-          font-weight: 700;
-          color: var(--text-secondary);
-          text-transform: uppercase;
-          border-bottom: 1px solid var(--border-color);
-          padding-bottom: 0.5rem;
-          margin-bottom: 0.75rem;
-        }
-
-        .invoice-col ul {
-          list-style: none;
-          display: flex;
-          flex-direction: column;
-          gap: 0.5rem;
-          font-size: 0.85rem;
-        }
-
-        .invoice-col li {
-          display: flex;
-          justify-content: space-between;
-        }
-
-        .invoice-col li.col-total {
-          border-top: 1.5px solid var(--border-color);
-          padding-top: 0.5rem;
-          margin-top: 0.25rem;
-          font-weight: 700;
-          font-size: 0.9rem;
-        }
-
-        .payslip-invoice-footer {
-          border-top: 1.5px solid var(--text-primary);
-          padding-top: 1.25rem;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          flex-wrap: wrap;
-          gap: 1rem;
-        }
-
-        .net-take-home {
-          display: flex;
-          flex-direction: column;
-        }
-
-        .net-take-home span {
-          font-size: 0.75rem;
-          font-weight: 700;
-          color: var(--text-secondary);
-          letter-spacing: 0.5px;
-        }
-
-        .net-take-home h3 {
-          font-size: 1.6rem;
-          font-weight: 800;
-          color: var(--status-present);
-        }
-
-        .audit-detail {
-          max-width: 400px;
-          font-size: 0.75rem;
-          color: var(--text-muted);
-          line-height: 1.3;
-          text-align: right;
-        }
-
-        @media (max-width: 1024px) {
-          .payroll-layout {
-            grid-template-columns: 1fr;
-          }
-        }
-
-        @media (max-width: 768px) {
-          .payslip-invoice-columns {
-            grid-template-columns: 1fr;
-          }
-        }
-      `}</style>
     </div>
   );
 }
