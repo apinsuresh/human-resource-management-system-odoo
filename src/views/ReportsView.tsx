@@ -195,6 +195,45 @@ export default function ReportsView() {
     { icon: '📅', text: '3 reports are scheduled to run tomorrow.' },
   ];
 
+  const handleExportDashboard = () => {
+    const csvRows = [
+      ['Odoo HRMS - Reports & Analytics Summary'],
+      ['Date Range', dateRange],
+      ['Department Filter', department],
+      ['Report Type Filter', reportType],
+      ['Exported At', new Date().toLocaleString()],
+      [],
+      ['KPI Metric', 'Value', 'Trend'],
+      ...kpiCards.map(k => [k.label, k.value.toString(), k.trend]),
+      [],
+      ['Attendance Summary', 'Value'],
+      ['Total Working Days', '23'],
+      ['Days Present', '20'],
+      ['Days Absent', '2'],
+      ['On Leave', '1'],
+      ['Attendance Rate', '87%'],
+      [],
+      ['Department Breakdown', 'Employee Count'],
+      ...deptData.map(d => [d.label, d.value.toString()]),
+      [],
+      ['Payroll Summary', 'Amount (INR)'],
+      ['Total Payroll', '₹2,10,000'],
+      ['Net Payroll', '₹1,68,450']
+    ];
+
+    const csvContent = csvRows.map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `Odoo_HRMS_Analytics_Report_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    showToast('Analytics dashboard report exported successfully!', 'success');
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', width: '100%', gap: '1.25rem' }}>
 
@@ -209,8 +248,12 @@ export default function ReportsView() {
             <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', margin: '2px 0 0' }}>Access and analyze employee activity, payroll data, and insights.</p>
           </div>
         </div>
-        <button className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 1rem', fontSize: '0.82rem', whiteSpace: 'nowrap' }}
-          onClick={() => showToast('Dashboard exported successfully.', 'success')}>
+        <button 
+          type="button"
+          className="btn btn-primary" 
+          style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 1rem', fontSize: '0.82rem', whiteSpace: 'nowrap' }}
+          onClick={handleExportDashboard}
+        >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           Export Dashboard
         </button>
