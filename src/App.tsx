@@ -16,6 +16,7 @@ import Directory from './views/Directory';
 import AttendanceView from './views/AttendanceView';
 import TimeOffView from './views/TimeOffView';
 import PayrollView from './views/PayrollView';
+import ReportsView from './views/ReportsView';
 
 export default function App() {
   const [session, setSession] = useState<any>(null);
@@ -90,13 +91,7 @@ export default function App() {
       case 'payroll':
         return <PayrollView userRole={session.role} />;
       case 'reports':
-        return (
-          <div className="card glass-card" style={{ padding: '3rem', textAlign: 'center' }}>
-            <span style={{ fontSize: '3rem', display: 'block', marginBottom: '1rem' }}>📈</span>
-            <h3>Reports & Analytics Console</h3>
-            <p style={{ color: 'var(--text-secondary)', marginTop: '0.5rem' }}>Coming soon! Comprehensive employee activity and payroll logs will be viewable here.</p>
-          </div>
-        );
+        return <ReportsView />;
       case 'settings':
         return (
           <div className="card glass-card" style={{ padding: '3rem', textAlign: 'center' }}>
