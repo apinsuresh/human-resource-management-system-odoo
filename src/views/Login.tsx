@@ -102,6 +102,14 @@ export default function Login({ onLoginSuccess }: LoginProps) {
     }
   };
 
+  const resetDatabase = () => {
+    localStorage.clear();
+    showToast('Database reset to defaults. Reloading...', 'success');
+    setTimeout(() => {
+      window.location.reload();
+    }, 800);
+  };
+
   return (
     <div className="login-wrapper">
       <div className="login-card">
@@ -244,7 +252,17 @@ export default function Login({ onLoginSuccess }: LoginProps) {
         {/* Demo Accounts Quick-Fill Section */}
         {!needsReset && (
           <div className="demo-accounts-box">
-            <h4>Quick Testing Logins</h4>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+              <h4 style={{ margin: 0 }}>Quick Testing Logins</h4>
+              <button 
+                type="button" 
+                className="btn btn-secondary btn-sm" 
+                style={{ minHeight: '24px', padding: '0 0.5rem', fontSize: '0.7rem', color: 'var(--status-leave)', borderColor: 'rgba(239,68,68,0.2)', width: 'auto' }}
+                onClick={resetDatabase}
+              >
+                Reset Database
+              </button>
+            </div>
             <div className="demo-btns-grid">
               <button type="button" className="btn btn-secondary btn-sm" onClick={() => quickFill('admin')}>
                 🔑 Admin
