@@ -78,8 +78,6 @@ export default function App() {
     if (session.role === 'ADMIN') {
       return [
         { label: 'Dashboard', view: 'dashboard' },
-        { label: 'Organizations', view: 'settings', tab: 'org_mgmt' },
-        { label: 'Users', view: 'settings', tab: 'user_mgmt' },
         { label: 'Employees', view: 'directory' },
         { label: 'Salary Info', view: 'salary_info' },
         { label: 'Attendance', view: 'attendance' },
