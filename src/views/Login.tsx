@@ -12,6 +12,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [selectedRole, setSelectedRole] = useState<'hr' | 'admin' | 'employer'>('hr');
 
   // Forced Reset States
   const [needsReset, setNeedsReset] = useState(false);
@@ -30,6 +31,20 @@ export default function Login({ onLoginSuccess }: LoginProps) {
     try {
       const session = await mockAuthLogin(identifier, password);
       
+      // Role validation checks as per Section 3A.2
+      if (selectedRole === 'admin' && session.role !== 'ADMIN') {
+        showToast('You do not have permission to access the Administrator workspace.', 'error');
+        return;
+      }
+      if (selectedRole === 'hr' && session.role !== 'HR_OFFICER') {
+        showToast('You do not have permission to access the HR workspace.', 'error');
+        return;
+      }
+      if (selectedRole === 'employer' && session.role !== 'EMPLOYEE') {
+        showToast('You do not have permission to access the Employer / Leadership workspace.', 'error');
+        return;
+      }
+
       if (session.mustResetPassword) {
         showToast('Password change required on first login.', 'info');
         setTempSession(session);
@@ -62,7 +77,6 @@ export default function Login({ onLoginSuccess }: LoginProps) {
       await mockResetPassword(tempSession.user.id, password, newPassword);
       showToast('Password updated successfully! Logging you in...', 'success');
       
-      // Update local password and complete login
       const updatedSession = { ...tempSession, mustResetPassword: false };
       onLoginSuccess(updatedSession);
     } catch (err: any) {
@@ -72,15 +86,17 @@ export default function Login({ onLoginSuccess }: LoginProps) {
     }
   };
 
-  // Helper function to pre-fill credentials for testing
   const quickFill = (role: 'admin' | 'hr' | 'employee') => {
     if (role === 'admin') {
+      setSelectedRole('admin');
       setIdentifier('OIADMI20260001');
       setPassword('AdminPassword123');
     } else if (role === 'hr') {
+      setSelectedRole('hr');
       setIdentifier('OIHRMS20260002');
       setPassword('HRPassword123');
     } else {
+      setSelectedRole('employer');
       setIdentifier('OIANRA20260003');
       setPassword('EmpPassword123');
     }
@@ -95,8 +111,53 @@ export default function Login({ onLoginSuccess }: LoginProps) {
         </div>
 
         {!needsReset ? (
-          /* Login Form */
+          /* Login Form with Role selectors */
           <form onSubmit={handleLoginSubmit} noValidate>
+            
+            {/* Account Type selectors */}
+            <div className="login-role-selector" style={{ marginBottom: '1.25rem', textAlign: 'left' }}>
+              <label style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.5rem' }}>
+                Choose your account type
+              </label>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem' }}>
+                {/* HR Card */}
+                <div 
+                  className={`role-select-card ${selectedRole === 'hr' ? 'active' : ''}`}
+                  onClick={() => setSelectedRole('hr')}
+                >
+                  <div className="role-card-check">
+                    {selectedRole === 'hr' && <span className="check-dot"></span>}
+                  </div>
+                  <strong className="role-card-title">HR</strong>
+                  <span className="role-card-sub">HR Operations</span>
+                </div>
+
+                {/* Admin Card */}
+                <div 
+                  className={`role-select-card ${selectedRole === 'admin' ? 'active' : ''}`}
+                  onClick={() => setSelectedRole('admin')}
+                >
+                  <div className="role-card-check">
+                    {selectedRole === 'admin' && <span className="check-dot"></span>}
+                  </div>
+                  <strong className="role-card-title">Admin</strong>
+                  <span className="role-card-sub">System Control</span>
+                </div>
+
+                {/* Employer Card */}
+                <div 
+                  className={`role-select-card ${selectedRole === 'employer' ? 'active' : ''}`}
+                  onClick={() => setSelectedRole('employer')}
+                >
+                  <div className="role-card-check">
+                    {selectedRole === 'employer' && <span className="check-dot"></span>}
+                  </div>
+                  <strong className="role-card-title">Employer</strong>
+                  <span className="role-card-sub">Executive View</span>
+                </div>
+              </div>
+            </div>
+
             <div className="form-group">
               <label htmlFor="login-id">Login ID or Email Address</label>
               <input
@@ -135,7 +196,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
               </div>
             </div>
 
-            <button type="submit" className="btn btn-primary w-100" disabled={loading}>
+            <button type="submit" className="btn btn-primary w-100" disabled={loading} style={{ minHeight: '40px' }}>
               {loading ? 'Logging in...' : 'Sign In'}
             </button>
           </form>
@@ -174,7 +235,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
               />
             </div>
 
-            <button type="submit" className="btn btn-primary w-100" disabled={loading}>
+            <button type="submit" className="btn btn-primary w-100" disabled={loading} style={{ minHeight: '40px' }}>
               {loading ? 'Saving...' : 'Set Password & Login'}
             </button>
           </form>
@@ -189,14 +250,14 @@ export default function Login({ onLoginSuccess }: LoginProps) {
                 🔑 Admin
               </button>
               <button type="button" className="btn btn-secondary btn-sm" onClick={() => quickFill('hr')}>
-                🔑 HR Officer
+                🔑 HR
               </button>
               <button type="button" className="btn btn-secondary btn-sm" onClick={() => quickFill('employee')}>
-                🔑 Employee (Anita)
+                🔑 Employer
               </button>
             </div>
             <span className="demo-warning">
-              Anita Rao triggers the forced password-reset flow on first login!
+              Anita Rao (Employer test account) triggers forced reset!
             </span>
           </div>
         )}
@@ -305,6 +366,70 @@ export default function Login({ onLoginSuccess }: LoginProps) {
           font-size: 0.75rem;
           color: var(--text-muted);
           line-height: 1.3;
+        }
+
+        /* Role Card Selectors */
+        .role-select-card {
+          background: rgba(255, 255, 255, 0.4);
+          border: 1px solid var(--border-glass);
+          border-radius: 12px;
+          padding: 0.75rem 0.5rem;
+          text-align: center;
+          cursor: pointer;
+          transition: all var(--transition-speed);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          position: relative;
+        }
+
+        .role-select-card:hover {
+          background: rgba(255, 255, 255, 0.8);
+          border-color: rgba(37, 99, 235, 0.2);
+          transform: translateY(-1px);
+        }
+
+        .role-select-card.active {
+          background: #ffffff;
+          border-color: var(--accent-primary);
+          box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);
+        }
+
+        .role-card-check {
+          width: 14px;
+          height: 14px;
+          border-radius: 50%;
+          border: 1px solid var(--text-muted);
+          margin-bottom: 0.4rem;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .role-select-card.active .role-card-check {
+          border-color: var(--accent-primary);
+          background: var(--accent-primary);
+        }
+
+        .check-dot {
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: white;
+        }
+
+        .role-card-title {
+          font-size: 0.85rem;
+          color: var(--text-primary);
+          font-weight: 700;
+          display: block;
+        }
+
+        .role-card-sub {
+          font-size: 0.65rem;
+          color: var(--text-secondary);
+          margin-top: 0.15rem;
+          display: block;
         }
       `}</style>
     </div>
